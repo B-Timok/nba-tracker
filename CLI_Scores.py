@@ -15,6 +15,8 @@ pst_timezone = pytz.timezone("US/Pacific")
 # Send an HTTP GET request to the URL
 response = requests.get(url)
 
+print()
+
 # Check if the request was successful
 if response.status_code == 200:
     # Parse the JSON response
@@ -36,12 +38,11 @@ if response.status_code == 200:
         away_losses = game["awayTeam"]["losses"]
         home_score = game["homeTeam"]["score"]
         away_score = game["awayTeam"]["score"]
-        game_status = game["gameStatusText"]
+        game_status = game["gameStatus"]
+        game_status_text = game["gameStatusText"]
 
         # Check if the game hasn't started yet
-        if game_status == "Final":
-            game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): {home_score}-{away_score} ({game_status})"
-        else:
+        if game_status == 1:
             game_time_utc = game.get("gameTimeUTC", "")
             
             # Convert UTC time to PST
@@ -52,11 +53,15 @@ if response.status_code == 200:
             game_time_pst_str = game_time_pst.strftime("%Y-%m-%d %I:%M %p").replace(" 0", " ")
             
             game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): Game starts at {game_time_pst_str} PST"
-        
-        print(game_info)
-        print()
 
-        if game_status == "Final":
+            print(game_info)
+        else:
+            game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): {home_score}-{away_score} ({game_status_text})"
+            game_time_utc = game.get("gameTimeUTC", "")
+
+            print(game_info)
+            print()
+
             # Display home team leaders
             home_leaders = game["gameLeaders"]["homeLeaders"]
             print(f"{home_team} Leaders: {home_leaders['name']} - Points: {home_leaders['points']}, Rebounds: {home_leaders['rebounds']}, Assists: {home_leaders['assists']}")
@@ -65,6 +70,17 @@ if response.status_code == 200:
             away_leaders = game["gameLeaders"]["awayLeaders"]
             print(f"{away_team} Leaders: {away_leaders['name']} - Points: {away_leaders['points']}, Rebounds: {away_leaders['rebounds']}, Assists: {away_leaders['assists']}")
             
+
+        print()
+
+        # # Display home team leaders
+        # home_leaders = game["gameLeaders"]["homeLeaders"]
+        # print(f"{home_team} Leaders: {home_leaders['name']} - Points: {home_leaders['points']}, Rebounds: {home_leaders['rebounds']}, Assists: {home_leaders['assists']}")
+        
+        # # Display away team leaders
+        # away_leaders = game["gameLeaders"]["awayLeaders"]
+        # print(f"{away_team} Leaders: {away_leaders['name']} - Points: {away_leaders['points']}, Rebounds: {away_leaders['rebounds']}, Assists: {away_leaders['assists']}")
+        
         # Add a separator between games
         print("-" * 50)
         print()

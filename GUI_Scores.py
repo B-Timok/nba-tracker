@@ -33,29 +33,27 @@ def fetch_data():
             away_losses = game["awayTeam"]["losses"]
             home_score = game["homeTeam"]["score"]
             away_score = game["awayTeam"]["score"]
-            game_status = game["gameStatusText"]
-            
-            if game_status == "Final":
-                game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): {home_score}-{away_score} ({game_status})"
+            game_status = game["gameStatus"]
+            game_status_text = game["gameStatusText"]
+
+            game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): {home_score}-{away_score} ({game_status_text})"
+
+            if game_status == 1:
+                # Game hasn't started yet
+                output_text.insert(tk.END, game_info + " (Game hasn't started yet)\n\n")
             else:
-                game_time_utc = game.get("gameTimeUTC", "")
-                
-                game_time_utc = datetime.fromisoformat(game_time_utc.replace('Z', '+00:00')).replace(tzinfo=utc_timezone)
-                game_time_pst = game_time_utc.astimezone(pst_timezone)
-                game_time_pst_str = game_time_pst.strftime("%Y-%m-%d %I:%M %p").replace(" 0", " ")
-                
-                game_info = f"{home_team} ({home_wins}-{home_losses}) vs {away_team} ({away_wins}-{away_losses}): Game starts at {game_time_pst_str} PST"
-            
-            output_text.insert(tk.END, game_info + "\n\n")
-            
-            if game_status == "Final":
+                # Display home team leaders
                 home_leaders = game["gameLeaders"]["homeLeaders"]
-                output_text.insert(tk.END, f"{home_team} Leaders: {home_leaders['name']} - Points: {home_leaders['points']}, Rebounds: {home_leaders['rebounds']}, Assists: {home_leaders['assists']}\n")
+                home_leader_info = f"{home_team} Leaders: {home_leaders['name']} - Points: {home_leaders['points']}, Rebounds: {home_leaders['rebounds']}, Assists: {home_leaders['assists']}"
                 
+                # Display away team leaders
                 away_leaders = game["gameLeaders"]["awayLeaders"]
-                output_text.insert(tk.END, f"{away_team} Leaders: {away_leaders['name']} - Points: {away_leaders['points']}, Rebounds: {away_leaders['rebounds']}, Assists: {away_leaders['assists']}\n")
-            
-            output_text.insert(tk.END, "-" * 50 + "\n\n")
+                away_leader_info = f"{away_team} Leaders: {away_leaders['name']} - Points: {away_leaders['points']}, Rebounds: {away_leaders['rebounds']}, Assists: {away_leaders['assists']}"
+                
+                output_text.insert(tk.END, game_info + "\n\n")
+                output_text.insert(tk.END, home_leader_info + "\n")
+                output_text.insert(tk.END, away_leader_info + "\n")
+                output_text.insert(tk.END, "-" * 50 + "\n")
     else:
         output_text.insert(tk.END, "Failed to retrieve data\n")
 
@@ -68,7 +66,7 @@ fetch_button = ttk.Button(app, text="Fetch Data", command=fetch_data)
 fetch_button.pack()
 
 # Create a text widget for displaying the data
-output_text = tk.Text(app, wrap=tk.WORD, width=60, height=20)
+output_text = tk.Text(app, wrap=tk.WORD, width=80, height=30)
 output_text.pack()
 
 app.mainloop()
