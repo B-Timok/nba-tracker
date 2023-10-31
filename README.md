@@ -25,6 +25,7 @@ You can install the required libraries using pip:
 1. Open your terminal or command prompt.
 2. Navigate to the directory where the Python script is located.
 3. Run the script using the following command:
+
     ```bash
     python nba_live_scoreboard.py
 
