@@ -6,8 +6,6 @@
 - [How to Run](#how-to-run)
 - [Program Description](#program-description)
 - [Example Usage](#example-usage)
-- [Author](#author)
-- [License](#license)
 
 ## Introduction
 
