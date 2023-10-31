@@ -72,15 +72,6 @@ if response.status_code == 200:
             
 
         print()
-
-        # # Display home team leaders
-        # home_leaders = game["gameLeaders"]["homeLeaders"]
-        # print(f"{home_team} Leaders: {home_leaders['name']} - Points: {home_leaders['points']}, Rebounds: {home_leaders['rebounds']}, Assists: {home_leaders['assists']}")
-        
-        # # Display away team leaders
-        # away_leaders = game["gameLeaders"]["awayLeaders"]
-        # print(f"{away_team} Leaders: {away_leaders['name']} - Points: {away_leaders['points']}, Rebounds: {away_leaders['rebounds']}, Assists: {away_leaders['assists']}")
-        
         # Add a separator between games
         print("-" * 50)
         print()
