@@ -6,6 +6,7 @@
 		{ href: '/', label: 'Scores' },
 		{ href: '/standings', label: 'Standings' },
 		{ href: '/stats', label: 'Stats' },
+		{ href: '/playoffs', label: 'Playoffs' },
 	];
 </script>
 

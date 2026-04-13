@@ -214,3 +214,34 @@ export interface PlayerProfile {
 	seasons: PlayerSeason[];
 	career_totals: PlayerSeason;
 }
+
+export interface BracketTeam {
+	team_id: number;
+	city: string;
+	name: string;
+	tricode: string;
+	rank: number;
+	wins: number;
+	reg_wins: number;
+	reg_losses: number;
+}
+
+export interface BracketSeries {
+	series_id: string;
+	round: number;
+	series_number: number;
+	conference: string;
+	round_name: string;
+	series_text: string;
+	series_status: number;
+	series_winner: number;
+	high_seed: BracketTeam;
+	low_seed: BracketTeam;
+	display_order: number;
+}
+
+export interface PlayoffBracket {
+	season: string;
+	current_round: number;
+	series: BracketSeries[];
+}
