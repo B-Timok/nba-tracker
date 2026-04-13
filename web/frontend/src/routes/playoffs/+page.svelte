@@ -216,38 +216,37 @@
 			<p class="subtitle">Based on current standings. Updates as the season progresses.</p>
 		{/if}
 
-		<!-- Finals above bracket -->
-		<div class="finals">
-			<div class="finals-label">NBA Finals</div>
-			{#if finals && hasTeams(finals)}
-				<div class="matchup finals-matchup" in:fly={{ y: -20, duration: 400, delay: 600 }}>
-					<div class="team-row" class:winner={isWinner(finals, 'high')} class:loser={isLoser(finals, 'high')} style="--team-color: {getTeamColor(finals.high_seed.tricode)}">
-						<span class="seed">{finals.high_seed.rank}</span>
-						<span class="team-name">{finals.high_seed.name}</span>
-						<span class="series-wins">{finals.high_seed.wins}</span>
-					</div>
-					<div class="team-row" class:winner={isWinner(finals, 'low')} class:loser={isLoser(finals, 'low')} style="--team-color: {getTeamColor(finals.low_seed.tricode)}">
-						<span class="seed">{finals.low_seed.rank}</span>
-						<span class="team-name">{finals.low_seed.name}</span>
-						<span class="series-wins">{finals.low_seed.wins}</span>
-					</div>
-					{#if finals.series_text}
-						<div class="series-status">{finals.series_text}</div>
-					{/if}
-					<div class="venue">{getVenue(finals)}</div>
-				</div>
-			{:else}
-				<div class="matchup finals-matchup">
-					<div class="team-row tbd"><span class="team-name">East Champion</span></div>
-					<div class="team-row tbd"><span class="team-name">West Champion</span></div>
-				</div>
-			{/if}
-		</div>
-
-		<!-- 6-column bracket grid -->
 		<div class="bracket-container">
 			<div class="conf-label east-label">Eastern Conference</div>
 			<div class="conf-label west-label">Western Conference</div>
+
+			<!-- Finals: spans center two columns above conf finals -->
+			<div class="finals">
+				<div class="finals-label">NBA Finals</div>
+				{#if finals && hasTeams(finals)}
+					<div class="matchup finals-matchup" in:fly={{ y: -20, duration: 400, delay: 600 }}>
+						<div class="team-row" class:winner={isWinner(finals, 'high')} class:loser={isLoser(finals, 'high')} style="--team-color: {getTeamColor(finals.high_seed.tricode)}">
+							<span class="seed">{finals.high_seed.rank}</span>
+							<span class="team-name">{finals.high_seed.name}</span>
+							<span class="series-wins">{finals.high_seed.wins}</span>
+						</div>
+						<div class="team-row" class:winner={isWinner(finals, 'low')} class:loser={isLoser(finals, 'low')} style="--team-color: {getTeamColor(finals.low_seed.tricode)}">
+							<span class="seed">{finals.low_seed.rank}</span>
+							<span class="team-name">{finals.low_seed.name}</span>
+							<span class="series-wins">{finals.low_seed.wins}</span>
+						</div>
+						{#if finals.series_text}
+							<div class="series-status">{finals.series_text}</div>
+						{/if}
+						<div class="venue">{getVenue(finals)}</div>
+					</div>
+				{:else}
+					<div class="matchup finals-matchup">
+						<div class="team-row tbd"><span class="team-name">East Champion</span></div>
+						<div class="team-row tbd"><span class="team-name">West Champion</span></div>
+					</div>
+				{/if}
+			</div>
 
 			<!-- East: R1 → R2 → CF -->
 			{#each [1, 2, 3] as round}
@@ -379,29 +378,14 @@
 		margin-bottom: 2rem;
 	}
 
-	/* Finals centered above the bracket */
-	.finals {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.finals-label {
-		font-family: var(--font-heading);
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--accent-orange);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-	}
-
-	/* 6-column grid: E-R1 | E-R2 | E-CF | W-CF | W-R2 | W-R1 */
+	/* 6-column, 3-row grid:
+	   Row 1: conference labels
+	   Row 2: Finals spanning center two columns (above CF rounds)
+	   Row 3: all rounds */
 	.bracket-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto auto 1fr;
 		gap: 0.5rem;
 		align-items: start;
 	}
@@ -420,13 +404,32 @@
 	.east-label { grid-column: 1 / 4; grid-row: 1; }
 	.west-label { grid-column: 4 / 7; grid-row: 1; }
 
+	.finals {
+		grid-column: 3 / 5;
+		grid-row: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding-bottom: 0.75rem;
+	}
+
+	.finals-label {
+		font-family: var(--font-heading);
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--accent-orange);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+
 	.round {
 		display: flex;
 		flex-direction: column;
 		justify-content: space-around;
 		min-height: 480px;
 		gap: 0.5rem;
-		grid-row: 2;
+		grid-row: 3;
 	}
 
 	.east-round.round-1 { grid-column: 1; }
