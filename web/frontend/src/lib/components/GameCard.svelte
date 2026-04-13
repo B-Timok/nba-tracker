@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Game } from '$lib/types';
+	import { getTeamColor } from '$lib/teamColors';
 
 	export let game: Game;
 
@@ -15,14 +16,14 @@
 	</div>
 
 	<div class="teams">
-		<div class="team away">
+		<div class="team away" style="--team-color: {getTeamColor(game.away_team.tricode)}">
 			<span class="team-name">{game.away_team.city} {game.away_team.name}</span>
 			<span class="record">{game.away_team.record}</span>
 			<span class="score" class:winning={game.away_team.score > game.home_team.score}>
 				{game.is_scheduled ? '' : game.away_team.score}
 			</span>
 		</div>
-		<div class="team home">
+		<div class="team home" style="--team-color: {getTeamColor(game.home_team.tricode)}">
 			<span class="team-name">{game.home_team.city} {game.home_team.name}</span>
 			<span class="record">{game.home_team.record}</span>
 			<span class="score" class:winning={game.home_team.score > game.away_team.score}>
@@ -110,6 +111,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		border-left: 3px solid var(--team-color);
+		padding-left: 0.75rem;
 	}
 
 	.team-name {

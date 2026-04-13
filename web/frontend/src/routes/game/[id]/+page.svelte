@@ -71,8 +71,8 @@
 
 		{#if activeTab === 'boxscore'}
 			<div class="box-scores">
-				<BoxScore team={boxScore.away} label="{boxScore.away.team.city} {boxScore.away.team.name}" />
-				<BoxScore team={boxScore.home} label="{boxScore.home.team.city} {boxScore.home.team.name}" />
+				<BoxScore team={boxScore.away} label="{boxScore.away.team.city} {boxScore.away.team.name}" teamTricode={boxScore.away.team.tricode} />
+				<BoxScore team={boxScore.home} label="{boxScore.home.team.city} {boxScore.home.team.name}" teamTricode={boxScore.home.team.tricode} />
 			</div>
 		{:else}
 			<PlayByPlay actions={plays} />
