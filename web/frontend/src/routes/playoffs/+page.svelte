@@ -189,6 +189,11 @@
 		return series.high_seed.team_id > 0 && series.low_seed.team_id > 0;
 	}
 
+	function venue(series: BracketSeries): string {
+		if (!hasTeams(series)) return '';
+		return series.high_seed.city;
+	}
+
 	$: finals = getFinals();
 </script>
 
@@ -237,6 +242,9 @@
 								{#if series.series_text}
 									<div class="series-status">{series.series_text}</div>
 								{/if}
+								{#if venue(series)}
+									<div class="venue">📍 {venue(series)}</div>
+								{/if}
 							{:else}
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
@@ -263,6 +271,9 @@
 						</div>
 						{#if finals.series_text}
 							<div class="series-status">{finals.series_text}</div>
+						{/if}
+						{#if venue(finals)}
+							<div class="venue">📍 {venue(finals)}</div>
 						{/if}
 					</div>
 				{:else}
@@ -299,6 +310,9 @@
 								</div>
 								{#if series.series_text}
 									<div class="series-status">{series.series_text}</div>
+								{/if}
+								{#if venue(series)}
+									<div class="venue">📍 {venue(series)}</div>
 								{/if}
 							{:else}
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
@@ -343,8 +357,9 @@
 
 <style>
 	.playoffs-page {
-		max-width: 1400px;
+		max-width: 1600px;
 		margin: 0 auto;
+		overflow-x: auto;
 	}
 
 	h1 {
@@ -431,10 +446,11 @@
 		border: 1px solid var(--border-subtle);
 		border-radius: var(--radius-sm);
 		overflow: hidden;
+		min-width: 180px;
 	}
 
 	.finals-matchup {
-		min-width: 180px;
+		min-width: 200px;
 	}
 
 	.finals-matchup .team-name {
@@ -532,6 +548,15 @@
 		padding: 0.3rem 0.5rem;
 		border-top: 1px solid var(--border-subtle);
 		background: rgba(0, 0, 0, 0.2);
+	}
+
+	.venue {
+		font-size: 0.6rem;
+		color: var(--text-muted);
+		text-align: center;
+		padding: 0.25rem 0.5rem;
+		border-top: 1px solid var(--border-subtle);
+		opacity: 0.7;
 	}
 
 	/* Play-In section */
