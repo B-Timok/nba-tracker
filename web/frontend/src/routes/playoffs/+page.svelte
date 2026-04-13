@@ -384,7 +384,7 @@
 	   Row 3: all rounds */
 	.bracket-container {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+		grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr);
 		grid-template-rows: auto auto 1fr;
 		gap: 0.5rem 0.5rem;
 		row-gap: 0;
