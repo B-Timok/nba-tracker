@@ -2,10 +2,12 @@
 	export let data: any[];
 	export let columns: { key: string; label: string; format?: (v: any) => string }[];
 	export let filterKey: string = '';
+	export let pageSize: number = 50;
 
 	let sortKey = '';
 	let sortAsc = false;
 	let search = '';
+	let currentPage = 0;
 
 	$: filtered = search
 		? data.filter(row => {
@@ -26,6 +28,12 @@
 				: String(vb).localeCompare(String(va));
 		})
 		: filtered;
+
+	$: totalPages = Math.ceil(sorted.length / pageSize);
+	$: paged = sorted.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+	// Reset to page 0 when search or sort changes
+	$: search, sortKey, sortAsc, currentPage = 0;
 
 	function toggleSort(key: string) {
 		if (sortKey === key) {
@@ -76,7 +84,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each sorted as row}
+			{#each paged as row}
 				<tr>
 					{#each columns as col}
 						<td class:text-col={col.key === filterKey}>
@@ -88,6 +96,20 @@
 		</tbody>
 	</table>
 </div>
+
+{#if totalPages > 1}
+	<div class="pagination">
+		<button class="page-btn" disabled={currentPage === 0} on:click={() => currentPage--}>
+			← Prev
+		</button>
+		<span class="page-info">
+			{currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, sorted.length)} of {sorted.length}
+		</span>
+		<button class="page-btn" disabled={currentPage >= totalPages - 1} on:click={() => currentPage++}>
+			Next →
+		</button>
+	</div>
+{/if}
 
 <style>
 	.search-bar {
@@ -167,4 +189,40 @@
 	}
 
 	tr:hover td { background: var(--bg-card-hover); }
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem;
+		margin-top: 1rem;
+		padding: 0.75rem;
+	}
+
+	.page-btn {
+		padding: 0.4rem 1rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		transition: all 0.15s ease;
+	}
+
+	.page-btn:hover:not(:disabled) {
+		border-color: var(--accent-orange);
+		color: var(--accent-orange);
+	}
+
+	.page-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	.page-info {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+	}
 </style>

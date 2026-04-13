@@ -110,7 +110,7 @@
 	}
 
 	.tab:hover { color: var(--text-primary); }
-	.tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+	.tab.active { color: var(--text-primary); border-bottom-color: var(--accent-orange); }
 
 	.skeleton-table { display: flex; flex-direction: column; gap: 0.5rem; }
 	.error { text-align: center; padding: 3rem; color: var(--accent-red); }

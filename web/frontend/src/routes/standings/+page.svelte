@@ -86,6 +86,16 @@
 				</tbody>
 			</table>
 		</div>
+
+		<div class="legend">
+			<span class="legend-title">Key:</span>
+			<span><strong>x</strong> — clinched playoff</span>
+			<span><strong>y</strong> — clinched division</span>
+			<span><strong>z</strong> — clinched conference</span>
+			<span><strong>w</strong> — best overall record</span>
+			<span><strong>p</strong> — clinched play-in</span>
+			<span><strong>e</strong> — eliminated</span>
+		</div>
 	{/if}
 </div>
 
@@ -117,7 +127,7 @@
 	}
 
 	.tab:hover { color: var(--text-primary); }
-	.tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+	.tab.active { color: var(--text-primary); border-bottom-color: var(--accent-orange); }
 
 	.table-wrapper {
 		overflow-x: auto;
@@ -163,6 +173,28 @@
 	.clinch { font-size: 0.7rem; color: var(--accent-green); margin-left: 0.3rem; }
 	.streak-w { color: var(--accent-green); }
 	.streak-l { color: var(--accent-red); }
+
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-top: 1rem;
+		padding: 0.75rem 1rem;
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.legend-title {
+		font-weight: 600;
+		color: var(--text-secondary);
+	}
+
+	.legend strong {
+		color: var(--accent-green);
+	}
 
 	.skeleton-table { display: flex; flex-direction: column; gap: 0.5rem; }
 	.error { text-align: center; padding: 3rem; color: var(--accent-red); }
