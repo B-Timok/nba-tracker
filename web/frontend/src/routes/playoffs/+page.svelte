@@ -59,92 +59,86 @@
 		<div class="error">{error}</div>
 	{:else if bracket}
 		<div class="bracket-container">
-			<!-- East Bracket: R1 → R2 → CF -->
-			<div class="conference east">
-				<div class="conf-label">Eastern Conference</div>
-				<div class="rounds">
-					{#each [1, 2, 3] as round}
-						<div class="round round-{round}">
-							{#each getSeriesByRoundConf(round, 'East') as series, i}
-								<div class="matchup" in:fly={{ x: -20, duration: 300, delay: i * 100 + round * 150 }}>
-									{#if hasTeams(series)}
-										<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
-											<span class="seed">{series.high_seed.rank}</span>
-											<span class="team-name">{series.high_seed.city} {series.high_seed.name}</span>
-											<span class="series-wins">{series.high_seed.wins}</span>
-										</div>
-										<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
-											<span class="seed">{series.low_seed.rank}</span>
-											<span class="team-name">{series.low_seed.city} {series.low_seed.name}</span>
-											<span class="series-wins">{series.low_seed.wins}</span>
-										</div>
-										<div class="series-status">{series.series_text}</div>
-									{:else}
-										<div class="team-row tbd"><span class="team-name">TBD</span></div>
-										<div class="team-row tbd"><span class="team-name">TBD</span></div>
-									{/if}
+			<!-- East: R1 → R2 → CF (left to center) -->
+			<div class="conf-label east-label">Eastern Conference</div>
+			<div class="placeholder"></div>
+			<div class="conf-label west-label">Western Conference</div>
+
+			{#each [1, 2, 3] as round}
+				<div class="round round-{round} east-round">
+					{#each getSeriesByRoundConf(round, 'East') as series, i}
+						<div class="matchup" in:fly={{ x: -20, duration: 300, delay: i * 100 + round * 150 }}>
+							{#if hasTeams(series)}
+								<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
+									<span class="seed">{series.high_seed.rank}</span>
+									<span class="team-name">{series.high_seed.name}</span>
+									<span class="series-wins">{series.high_seed.wins}</span>
 								</div>
-							{/each}
+								<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
+									<span class="seed">{series.low_seed.rank}</span>
+									<span class="team-name">{series.low_seed.name}</span>
+									<span class="series-wins">{series.low_seed.wins}</span>
+								</div>
+								<div class="series-status">{series.series_text}</div>
+							{:else}
+								<div class="team-row tbd"><span class="team-name">TBD</span></div>
+								<div class="team-row tbd"><span class="team-name">TBD</span></div>
+							{/if}
 						</div>
 					{/each}
 				</div>
-			</div>
+			{/each}
 
-			<!-- Finals -->
+			<!-- Finals (center column) -->
 			<div class="finals">
 				<div class="finals-label">NBA Finals</div>
 				{#if finals && hasTeams(finals)}
 					<div class="matchup finals-matchup" in:fly={{ y: -20, duration: 400, delay: 600 }}>
 						<div class="team-row" class:winner={isWinner(finals, 'high')} class:loser={isLoser(finals, 'high')} style="--team-color: {getTeamColor(finals.high_seed.tricode)}">
 							<span class="seed">{finals.high_seed.rank}</span>
-							<span class="team-name">{finals.high_seed.city} {finals.high_seed.name}</span>
+							<span class="team-name">{finals.high_seed.name}</span>
 							<span class="series-wins">{finals.high_seed.wins}</span>
 						</div>
 						<div class="team-row" class:winner={isWinner(finals, 'low')} class:loser={isLoser(finals, 'low')} style="--team-color: {getTeamColor(finals.low_seed.tricode)}">
 							<span class="seed">{finals.low_seed.rank}</span>
-							<span class="team-name">{finals.low_seed.city} {finals.low_seed.name}</span>
+							<span class="team-name">{finals.low_seed.name}</span>
 							<span class="series-wins">{finals.low_seed.wins}</span>
 						</div>
 						<div class="series-status">{finals.series_text}</div>
 					</div>
 				{:else}
-					<div class="matchup finals-matchup tbd-matchup">
+					<div class="matchup finals-matchup">
 						<div class="team-row tbd"><span class="team-name">East Champion</span></div>
 						<div class="team-row tbd"><span class="team-name">West Champion</span></div>
 					</div>
 				{/if}
 			</div>
 
-			<!-- West Bracket: CF ← R2 ← R1 -->
-			<div class="conference west">
-				<div class="conf-label">Western Conference</div>
-				<div class="rounds">
-					{#each [3, 2, 1] as round}
-						<div class="round round-{round}">
-							{#each getSeriesByRoundConf(round, 'West') as series, i}
-								<div class="matchup" in:fly={{ x: 20, duration: 300, delay: i * 100 + (4 - round) * 150 }}>
-									{#if hasTeams(series)}
-										<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
-											<span class="seed">{series.high_seed.rank}</span>
-											<span class="team-name">{series.high_seed.city} {series.high_seed.name}</span>
-											<span class="series-wins">{series.high_seed.wins}</span>
-										</div>
-										<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
-											<span class="seed">{series.low_seed.rank}</span>
-											<span class="team-name">{series.low_seed.city} {series.low_seed.name}</span>
-											<span class="series-wins">{series.low_seed.wins}</span>
-										</div>
-										<div class="series-status">{series.series_text}</div>
-									{:else}
-										<div class="team-row tbd"><span class="team-name">TBD</span></div>
-										<div class="team-row tbd"><span class="team-name">TBD</span></div>
-									{/if}
+			<!-- West: CF ← R2 ← R1 (right to center, mirrored) -->
+			{#each [3, 2, 1] as round}
+				<div class="round round-{round} west-round">
+					{#each getSeriesByRoundConf(round, 'West') as series, i}
+						<div class="matchup" in:fly={{ x: 20, duration: 300, delay: i * 100 + (4 - round) * 150 }}>
+							{#if hasTeams(series)}
+								<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
+									<span class="series-wins">{series.high_seed.wins}</span>
+									<span class="team-name right">{series.high_seed.name}</span>
+									<span class="seed">{series.high_seed.rank}</span>
 								</div>
-							{/each}
+								<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
+									<span class="series-wins">{series.low_seed.wins}</span>
+									<span class="team-name right">{series.low_seed.name}</span>
+									<span class="seed">{series.low_seed.rank}</span>
+								</div>
+								<div class="series-status">{series.series_text}</div>
+							{:else}
+								<div class="team-row tbd"><span class="team-name">TBD</span></div>
+								<div class="team-row tbd"><span class="team-name">TBD</span></div>
+							{/if}
 						</div>
 					{/each}
 				</div>
-			</div>
+			{/each}
 		</div>
 	{/if}
 </div>
@@ -165,57 +159,80 @@
 		background-clip: text;
 	}
 
+	/* 7-column grid: E-R1 | E-R2 | E-CF | Finals | W-CF | W-R2 | W-R1 */
 	.bracket-container {
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
-		gap: 1rem;
-		align-items: start;
-	}
-
-	.conference {
-		display: flex;
-		flex-direction: column;
+		grid-template-columns: 1fr 1fr 1fr auto 1fr 1fr 1fr;
+		grid-template-rows: auto 1fr;
 		gap: 0.5rem;
+		align-items: start;
 	}
 
 	.conf-label {
 		font-family: var(--font-heading);
-		font-size: 1rem;
+		font-size: 0.85rem;
 		font-weight: 700;
 		color: var(--text-secondary);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		text-align: center;
-		margin-bottom: 0.5rem;
+		padding-bottom: 0.5rem;
 	}
 
-	.rounds {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.west .rounds {
-		flex-direction: row-reverse;
-	}
+	.east-label { grid-column: 1 / 4; grid-row: 1; }
+	.placeholder { grid-column: 4; grid-row: 1; }
+	.west-label { grid-column: 5 / 8; grid-row: 1; }
 
 	.round {
 		display: flex;
 		flex-direction: column;
 		justify-content: space-around;
-		gap: 1rem;
-		flex: 1;
-		min-width: 0;
+		min-height: 520px;
+		gap: 0.5rem;
+		grid-row: 2;
 	}
 
-	.round-1 { min-height: 500px; }
-	.round-2 { min-height: 500px; }
-	.round-3 { min-height: 500px; }
+	/* East rounds: columns 1, 2, 3 */
+	.east-round.round-1 { grid-column: 1; }
+	.east-round.round-2 { grid-column: 2; }
+	.east-round.round-3 { grid-column: 3; }
+
+	/* Finals: column 4 */
+	.finals {
+		grid-column: 4;
+		grid-row: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 520px;
+		gap: 1rem;
+		padding: 0 0.5rem;
+	}
+
+	/* West rounds: columns 5, 6, 7 (CF closest to center) */
+	.west-round.round-3 { grid-column: 5; }
+	.west-round.round-2 { grid-column: 6; }
+	.west-round.round-1 { grid-column: 7; }
+
+	.finals-label {
+		font-family: var(--font-heading);
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--accent-orange);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
 
 	.matchup {
 		background: var(--bg-card);
 		border: 1px solid var(--border-subtle);
 		border-radius: var(--radius-sm);
 		overflow: hidden;
+	}
+
+	.finals-matchup {
+		min-width: 180px;
 	}
 
 	.team-row {
@@ -225,6 +242,12 @@
 		padding: 0.5rem 0.75rem;
 		border-left: 3px solid var(--team-color, var(--border-subtle));
 		transition: all 0.2s ease;
+	}
+
+	/* West side: color bar on right instead of left */
+	.west-round .team-row {
+		border-left: none;
+		border-right: 3px solid var(--team-color, var(--border-subtle));
 	}
 
 	.team-row + .team-row {
@@ -251,6 +274,7 @@
 
 	.team-row.tbd {
 		border-left-color: var(--border-subtle);
+		border-right-color: var(--border-subtle);
 	}
 
 	.seed {
@@ -267,8 +291,10 @@
 		font-weight: 600;
 		flex: 1;
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+	}
+
+	.team-name.right {
+		text-align: right;
 	}
 
 	.tbd .team-name {
@@ -280,7 +306,7 @@
 		font-family: var(--font-heading);
 		font-size: 1rem;
 		font-weight: 700;
-		min-width: 1.5rem;
+		min-width: 1.2rem;
 		text-align: center;
 	}
 
@@ -291,28 +317,6 @@
 		padding: 0.3rem 0.5rem;
 		border-top: 1px solid var(--border-subtle);
 		background: rgba(0, 0, 0, 0.2);
-	}
-
-	.finals {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 500px;
-		gap: 1rem;
-	}
-
-	.finals-label {
-		font-family: var(--font-heading);
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: var(--accent-orange);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-	}
-
-	.finals-matchup {
-		min-width: 220px;
 	}
 
 	.finals-matchup .team-name {
