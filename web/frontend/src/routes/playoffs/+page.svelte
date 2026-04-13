@@ -465,8 +465,8 @@
 	.team-row {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
+		gap: 0.35rem;
+		padding: 0.5rem 0.5rem;
 		border-left: 3px solid var(--team-color, var(--border-subtle));
 		transition: all 0.2s ease;
 	}
