@@ -302,6 +302,243 @@ class NBAClient:
             ))
         return games
 
+    def get_schedule(self) -> dict:
+        """Fetch and cache the full season schedule."""
+        key = "schedule:full"
+        cached = self._cache.get(key, 300)  # cache for 5 minutes
+        if cached is not None:
+            return cached
+        raw = self._get(NBAEndpoints.schedule())
+        self._cache.set(key, raw)
+        return raw
+
+    def get_scoreboard_cdn(self, game_date: date) -> list[Game]:
+        """Get scoreboard from CDN schedule data instead of stats.nba.com."""
+        today = date.today()
+        if game_date == today:
+            # Use live scoreboard for today (has real-time data)
+            key = f"scoreboard:{game_date.isoformat()}"
+            cached = self._cache.get(key, 30)  # short cache for live
+            if cached is not None:
+                return cached
+            raw = self._get(NBAEndpoints.scoreboard_today())
+            games = self._parse_scoreboard(raw)
+            self._cache.set(key, games)
+            return games
+
+        # For other dates, use the schedule
+        schedule = self.get_schedule()
+        game_dates = schedule.get("leagueSchedule", {}).get("gameDates", [])
+
+        # Format the target date to match schedule format (MM/DD/YYYY HH:MM:SS)
+        target = game_date.strftime("%m/%d/%Y")
+
+        games = []
+        for gd in game_dates:
+            gd_date = gd.get("gameDate", "")
+            if gd_date.startswith(target):
+                for g in gd.get("games", []):
+                    home = g.get("homeTeam", {})
+                    away = g.get("awayTeam", {})
+
+                    home_team = Team(
+                        team_id=home.get("teamId", 0),
+                        name=home.get("teamName", ""),
+                        city=home.get("teamCity", ""),
+                        tricode=home.get("teamTricode", ""),
+                        slug=home.get("teamSlug", ""),
+                        wins=home.get("wins", 0),
+                        losses=home.get("losses", 0),
+                        score=home.get("score", 0),
+                    )
+                    away_team = Team(
+                        team_id=away.get("teamId", 0),
+                        name=away.get("teamName", ""),
+                        city=away.get("teamCity", ""),
+                        tricode=away.get("teamTricode", ""),
+                        slug=away.get("teamSlug", ""),
+                        wins=away.get("wins", 0),
+                        losses=away.get("losses", 0),
+                        score=away.get("score", 0),
+                    )
+
+                    # Parse leaders if available
+                    home_leader = None
+                    away_leader = None
+                    leaders = g.get("pointsLeaders", [])
+                    for leader in leaders:
+                        if leader.get("teamId") == home.get("teamId"):
+                            home_leader = GameLeader(
+                                person_id=leader.get("personId", 0),
+                                name=leader.get("firstName", "") + " " + leader.get("lastName", ""),
+                                jersey_num=leader.get("jerseyNum", ""),
+                                position=leader.get("position", ""),
+                                team_tricode=home.get("teamTricode", ""),
+                                points=leader.get("points", 0),
+                                rebounds=leader.get("rebounds", 0),
+                                assists=leader.get("assists", 0),
+                            )
+                        elif leader.get("teamId") == away.get("teamId"):
+                            away_leader = GameLeader(
+                                person_id=leader.get("personId", 0),
+                                name=leader.get("firstName", "") + " " + leader.get("lastName", ""),
+                                jersey_num=leader.get("jerseyNum", ""),
+                                position=leader.get("position", ""),
+                                team_tricode=away.get("teamTricode", ""),
+                                points=leader.get("points", 0),
+                                rebounds=leader.get("rebounds", 0),
+                                assists=leader.get("assists", 0),
+                            )
+
+                    game = Game(
+                        game_id=g.get("gameId", ""),
+                        game_code=g.get("gameCode", ""),
+                        status=g.get("gameStatus", 1),
+                        status_text=g.get("gameStatusText", ""),
+                        period=g.get("period", 0) if isinstance(g.get("period"), int) else 0,
+                        game_clock=g.get("gameClock", ""),
+                        game_time_utc=g.get("gameTimeUTC", g.get("gameDateTimeUTC", "")),
+                        game_et=g.get("gameTimeEst", g.get("gameDateTimeEst", "")),
+                        home_team=home_team,
+                        away_team=away_team,
+                        home_leader=home_leader,
+                        away_leader=away_leader,
+                    )
+                    games.append(game)
+                break
+
+        return games
+
+    def get_standings_cdn(self) -> list[StandingsEntry]:
+        """Derive current standings from the schedule data."""
+        schedule = self.get_schedule()
+        game_dates = schedule.get("leagueSchedule", {}).get("gameDates", [])
+
+        # Track team records
+        teams: dict[int, dict] = {}
+
+        for gd in game_dates:
+            for g in gd.get("games", []):
+                if g.get("gameStatus") != 3:  # Only count completed games
+                    continue
+
+                home = g.get("homeTeam", {})
+                away = g.get("awayTeam", {})
+                home_id = home.get("teamId", 0)
+                away_id = away.get("teamId", 0)
+                home_score = home.get("score", 0)
+                away_score = away.get("score", 0)
+
+                if home_id not in teams:
+                    teams[home_id] = {
+                        "team_id": home_id, "team_name": home.get("teamName", ""),
+                        "team_city": home.get("teamCity", ""), "tricode": home.get("teamTricode", ""),
+                        "wins": 0, "losses": 0, "home_wins": 0, "home_losses": 0,
+                        "away_wins": 0, "away_losses": 0, "last_10": [], "streak_type": "", "streak_count": 0,
+                        "conference": "", "division": "",
+                    }
+                if away_id not in teams:
+                    teams[away_id] = {
+                        "team_id": away_id, "team_name": away.get("teamName", ""),
+                        "team_city": away.get("teamCity", ""), "tricode": away.get("teamTricode", ""),
+                        "wins": 0, "losses": 0, "home_wins": 0, "home_losses": 0,
+                        "away_wins": 0, "away_losses": 0, "last_10": [], "streak_type": "", "streak_count": 0,
+                        "conference": "", "division": "",
+                    }
+
+                if home_score > away_score:
+                    teams[home_id]["wins"] += 1
+                    teams[home_id]["home_wins"] += 1
+                    teams[home_id]["last_10"].append("W")
+                    teams[away_id]["losses"] += 1
+                    teams[away_id]["away_losses"] += 1
+                    teams[away_id]["last_10"].append("L")
+                else:
+                    teams[away_id]["wins"] += 1
+                    teams[away_id]["away_wins"] += 1
+                    teams[away_id]["last_10"].append("W")
+                    teams[home_id]["losses"] += 1
+                    teams[home_id]["home_losses"] += 1
+                    teams[home_id]["last_10"].append("L")
+
+        # Conference/division mapping (only real NBA teams)
+        conf_div = {
+            'ATL': ('East', 'Southeast'), 'BOS': ('East', 'Atlantic'), 'BKN': ('East', 'Atlantic'),
+            'CHA': ('East', 'Southeast'), 'CHI': ('East', 'Central'), 'CLE': ('East', 'Central'),
+            'DAL': ('West', 'Southwest'), 'DEN': ('West', 'Northwest'), 'DET': ('East', 'Central'),
+            'GSW': ('West', 'Pacific'), 'HOU': ('West', 'Southwest'), 'IND': ('East', 'Central'),
+            'LAC': ('West', 'Pacific'), 'LAL': ('West', 'Pacific'), 'MEM': ('West', 'Southwest'),
+            'MIA': ('East', 'Southeast'), 'MIL': ('East', 'Central'), 'MIN': ('West', 'Northwest'),
+            'NOP': ('West', 'Southwest'), 'NYK': ('East', 'Atlantic'), 'OKC': ('West', 'Northwest'),
+            'ORL': ('East', 'Southeast'), 'PHI': ('East', 'Atlantic'), 'PHX': ('West', 'Pacific'),
+            'POR': ('West', 'Northwest'), 'SAC': ('West', 'Pacific'), 'SAS': ('West', 'Southwest'),
+            'TOR': ('East', 'Atlantic'), 'UTA': ('West', 'Northwest'), 'WAS': ('East', 'Southeast'),
+        }
+
+        entries = []
+        for t in teams.values():
+            tricode = t["tricode"]
+            # Skip non-NBA teams (exhibition, All-Star, international)
+            if tricode not in conf_div:
+                continue
+            conf, div = conf_div.get(tricode, ("", ""))
+            t["conference"] = conf
+            t["division"] = div
+
+            total = t["wins"] + t["losses"]
+            win_pct = t["wins"] / total if total > 0 else 0.0
+            last_10 = t["last_10"][-10:]
+            l10_wins = last_10.count("W")
+            l10_losses = last_10.count("L")
+
+            # Calculate streak
+            streak = ""
+            if t["last_10"]:
+                last_result = t["last_10"][-1]
+                count = 0
+                for r in reversed(t["last_10"]):
+                    if r == last_result:
+                        count += 1
+                    else:
+                        break
+                streak = f"{last_result} {count}"
+
+            entries.append(StandingsEntry(
+                team_id=t["team_id"],
+                team_name=t["team_name"],
+                team_city=t["team_city"],
+                team_tricode=tricode,
+                conference=conf,
+                division=div,
+                division_rank=0,
+                playoff_rank=0,
+                wins=t["wins"],
+                losses=t["losses"],
+                win_pct=round(win_pct, 3),
+                home_record=f"{t['home_wins']}-{t['home_losses']}",
+                road_record=f"{t['away_wins']}-{t['away_losses']}",
+                last_10=f"{l10_wins}-{l10_losses}",
+                streak=streak,
+                games_back=0.0,
+                clinch_indicator="",
+            ))
+
+        # Calculate playoff rank and games back per conference
+        for conf in ["East", "West"]:
+            conf_teams = sorted(
+                [e for e in entries if e.conference == conf],
+                key=lambda x: x.win_pct,
+                reverse=True,
+            )
+            if conf_teams:
+                best_wins = conf_teams[0].wins
+                best_losses = conf_teams[0].losses
+                for rank, team in enumerate(conf_teams, 1):
+                    team.playoff_rank = rank
+                    team.games_back = round(((best_wins - team.wins) + (team.losses - best_losses)) / 2, 1)
+
+        return entries
+
     def get_scoreboard(self, game_date: date) -> list[Game]:
         key = f"scoreboard:{game_date.isoformat()}"
         cached = self._cache.get(key, CACHE_LONG)

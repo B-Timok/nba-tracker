@@ -1,10 +1,15 @@
 class NBAEndpoints:
     _CDN_BASE = "https://cdn.nba.com/static/json/liveData"
+    _CDN_STATIC = "https://cdn.nba.com/static/json/staticData"
     _STATS_BASE = "https://stats.nba.com/stats"
 
     @staticmethod
     def scoreboard_today() -> str:
         return f"{NBAEndpoints._CDN_BASE}/scoreboard/todaysScoreboard_00.json"
+
+    @staticmethod
+    def schedule() -> str:
+        return f"{NBAEndpoints._CDN_STATIC}/scheduleLeagueV2_1.json"
 
     @staticmethod
     def scoreboard(game_date: str) -> str:

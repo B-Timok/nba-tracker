@@ -110,7 +110,10 @@ def get_scoreboard(date_str: str):
     d = parse_game_date(date_str)
     if d is None:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-    games = client.get_scoreboard(d)
+    try:
+        games = client.get_scoreboard_cdn(d)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load scoreboard: {e}")
     return [_game_dict(g) for g in games]
 
 
@@ -148,9 +151,10 @@ def get_playbyplay(game_id: str):
 
 @router.get("/standings")
 def get_standings(season: str = Query(default=None)):
-    if not season:
-        season = game_date_to_season(date.today())
-    entries = client.get_standings(season)
+    try:
+        entries = client.get_standings_cdn()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load standings: {e}")
     return [
         {
             "team_id": e.team_id,
@@ -178,7 +182,10 @@ def get_standings(season: str = Query(default=None)):
 def get_player_stats(season: str = Query(default=None)):
     if not season:
         season = game_date_to_season(date.today())
-    stats = client.get_player_stats(season)
+    try:
+        stats = client.get_player_stats(season)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Player stats temporarily unavailable")
     return [
         {
             "player_id": s.player_id,
@@ -206,7 +213,10 @@ def get_player_stats(season: str = Query(default=None)):
 def get_team_stats(season: str = Query(default=None)):
     if not season:
         season = game_date_to_season(date.today())
-    stats = client.get_team_stats(season)
+    try:
+        stats = client.get_team_stats(season)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Team stats temporarily unavailable")
     return [
         {
             "team_id": s.team_id,
@@ -241,7 +251,7 @@ def get_player_profile(player_id: int):
         info_resp.raise_for_status()
         info_data = info_resp.json()
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Player not found: {e}")
+        raise HTTPException(status_code=503, detail="Player profile temporarily unavailable")
 
     # Fetch career stats
     try:
@@ -252,7 +262,7 @@ def get_player_profile(player_id: int):
         career_resp.raise_for_status()
         career_data = career_resp.json()
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Career stats not found: {e}")
+        raise HTTPException(status_code=503, detail="Player career stats temporarily unavailable")
 
     # Parse player info
     info_sets = info_data.get("resultSets", [])
