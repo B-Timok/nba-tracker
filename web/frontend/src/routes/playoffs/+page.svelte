@@ -532,6 +532,8 @@
 		font-size: 0.7rem;
 		color: var(--text-muted);
 		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.series-wins {
