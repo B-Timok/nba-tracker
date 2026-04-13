@@ -57,7 +57,7 @@
 
 	{#if topScorer && !game.is_scheduled}
 		<div class="leader">
-			{topScorer.name} — {topScorer.points} PTS, {topScorer.rebounds} REB, {topScorer.assists} AST
+			{topScorer.name} — {topScorer.points} PTS{#if topScorer.rebounds || topScorer.assists}, {topScorer.rebounds} REB, {topScorer.assists} AST{/if}
 		</div>
 	{/if}
 </div>
