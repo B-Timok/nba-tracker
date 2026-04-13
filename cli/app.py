@@ -1,6 +1,8 @@
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static
+from textual.app import App
 from textual.binding import Binding
+
+from nba_api import NBAClient
+from cli.screens.scoreboard import ScoreboardScreen
 
 
 class NBAApp(App):
@@ -8,9 +10,9 @@ class NBAApp(App):
 
     TITLE = "NBA Scoreboard"
     BINDINGS = [
-        Binding("1", "switch_screen('scoreboard')", "Scores", show=True),
-        Binding("2", "switch_screen('standings')", "Standings", show=True),
-        Binding("3", "switch_screen('stats')", "Stats", show=True),
+        Binding("1", "show_scoreboard", "Scores", show=True),
+        Binding("2", "show_standings", "Standings", show=True),
+        Binding("3", "show_stats", "Stats", show=True),
         Binding("q", "quit", "Quit", show=True),
     ]
 
@@ -18,18 +20,22 @@ class NBAApp(App):
     Screen {
         background: $surface;
     }
-    #placeholder {
-        width: 100%;
-        height: 100%;
-        content-align: center middle;
-    }
     """
 
-    def compose(self) -> ComposeResult:
-        yield Header(show_clock=True)
-        yield Static("Loading scoreboard...", id="placeholder")
-        yield Footer()
+    def __init__(self) -> None:
+        super().__init__()
+        self.client = NBAClient()
 
     def on_mount(self) -> None:
-        self.title = "NBA Scoreboard"
-        self.sub_title = "Loading..."
+        self.push_screen(ScoreboardScreen(self.client))
+
+    def action_show_scoreboard(self) -> None:
+        self.switch_screen(ScoreboardScreen(self.client))
+
+    def action_show_standings(self) -> None:
+        from cli.screens.standings import StandingsScreen
+        self.switch_screen(StandingsScreen(self.client))
+
+    def action_show_stats(self) -> None:
+        from cli.screens.stats import StatsScreen
+        self.switch_screen(StatsScreen(self.client))
