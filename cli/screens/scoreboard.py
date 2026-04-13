@@ -103,6 +103,7 @@ class ScoreboardScreen(Screen):
 
         status_bar.mark_refreshed()
         status_bar.set_ready()
+        table.focus()
 
         has_live = any(g.is_live for g in games)
         status_bar.has_live = has_live
