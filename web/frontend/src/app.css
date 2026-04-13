@@ -1,0 +1,70 @@
+:root {
+	--bg-primary: #0a0a0f;
+	--bg-card: #14141f;
+	--bg-card-hover: #1a1a2e;
+	--bg-nav: #0f0f18;
+	--accent-blue: #3b82f6;
+	--accent-orange: #f97316;
+	--accent-green: #22c55e;
+	--accent-red: #ef4444;
+	--color-final: #6b7280;
+	--color-scheduled: #38bdf8;
+	--text-primary: #f8fafc;
+	--text-secondary: #94a3b8;
+	--text-muted: #64748b;
+	--border-subtle: #1e293b;
+	--font-heading: 'Space Grotesk', sans-serif;
+	--font-body: 'Inter', sans-serif;
+	--radius: 12px;
+	--radius-sm: 8px;
+	--transition: 0.2s ease;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: var(--font-body);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+	font-family: var(--font-heading);
+	font-weight: 700;
+}
+
+a {
+	color: var(--accent-blue);
+	text-decoration: none;
+	transition: color var(--transition);
+}
+
+a:hover {
+	color: var(--accent-orange);
+}
+
+button {
+	font-family: var(--font-body);
+	cursor: pointer;
+	border: none;
+	background: none;
+	color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+	width: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border-subtle);
+	border-radius: 3px;
+}
