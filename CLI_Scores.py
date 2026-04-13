@@ -10,7 +10,7 @@ url = "https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.j
 utc_timezone = pytz.utc
 
 # Create a time zone object for the PST time
-pst_timezone = pytz.timezone("US/Pacific")
+pst_timezone = pytz.timezone("America/Los_Angeles")
 
 # Send an HTTP GET request to the URL
 response = requests.get(url)
@@ -28,6 +28,9 @@ if response.status_code == 200:
     # Extract the list of games
     games = scoreboard.get("games", [])
     
+    if not games:
+        print("No games scheduled for today.")
+
     # Iterate through the games and display relevant information
     for game in games:
         home_team = game["homeTeam"]["teamName"]
