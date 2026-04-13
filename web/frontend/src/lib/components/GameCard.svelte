@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import type { Game } from '$lib/types';
 	import { getTeamColor } from '$lib/teamColors';
 	import { selectedGame } from '$lib/stores';
@@ -6,9 +7,23 @@
 	export let game: Game;
 
 	$: statusClass = game.is_live ? 'live' : game.is_final ? 'final' : 'scheduled';
+	$: clickable = !game.is_scheduled;
+
+	function handleClick() {
+		if (!clickable) return;
+		selectedGame.set(game);
+		goto(`/game/${game.game_id}`);
+	}
 </script>
 
-<a href="/game/{game.game_id}" class="card {statusClass}" on:click={() => selectedGame.set(game)}>
+<div
+	class="card {statusClass}"
+	class:clickable
+	role={clickable ? 'link' : undefined}
+	tabindex={clickable ? 0 : undefined}
+	on:click={handleClick}
+	on:keydown={(e) => e.key === 'Enter' && handleClick()}
+>
 	<div class="status-badge">
 		{#if game.is_live}
 			<span class="live-dot"></span>
@@ -38,7 +53,7 @@
 			{game.home_leader.name} — {game.home_leader.points} PTS, {game.home_leader.rebounds} REB, {game.home_leader.assists} AST
 		</div>
 	{/if}
-</a>
+</div>
 
 <style>
 	.card {
@@ -48,19 +63,22 @@
 		border-radius: var(--radius);
 		padding: 1.25rem;
 		transition: all var(--transition);
-		cursor: pointer;
 		text-decoration: none;
 		color: var(--text-primary);
 	}
 
-	.card:hover {
+	.card.clickable {
+		cursor: pointer;
+	}
+
+	.card.clickable:hover {
 		transform: translateY(-4px);
 		box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 		border-color: var(--accent-blue);
 		background: var(--bg-card-hover);
 	}
 
-	.card:active {
+	.card.clickable:active {
 		transform: translateY(-2px);
 	}
 

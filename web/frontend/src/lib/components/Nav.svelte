@@ -29,7 +29,9 @@
 			{/each}
 		</div>
 
-		<DatePicker />
+		{#if $page.url.pathname === '/'}
+			<DatePicker />
+		{/if}
 	</div>
 </nav>
 
