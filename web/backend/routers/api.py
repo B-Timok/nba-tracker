@@ -151,8 +151,10 @@ def get_playbyplay(game_id: str):
 
 @router.get("/standings")
 def get_standings(season: str = Query(default=None)):
+    if not season:
+        season = game_date_to_season(date.today())
     try:
-        entries = client.get_standings_cdn()
+        entries = client.get_standings(season)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load standings: {e}")
     return [

@@ -9,6 +9,13 @@
 	$: statusClass = game.is_live ? 'live' : game.is_final ? 'final' : 'scheduled';
 	$: clickable = !game.is_scheduled;
 
+	$: topScorer = (() => {
+		const home = game.home_leader;
+		const away = game.away_leader;
+		if (home && away) return home.points >= away.points ? home : away;
+		return home || away;
+	})();
+
 	function handleClick() {
 		if (!clickable) return;
 		selectedGame.set(game);
@@ -48,9 +55,9 @@
 		</div>
 	</div>
 
-	{#if game.home_leader && !game.is_scheduled}
+	{#if topScorer && !game.is_scheduled}
 		<div class="leader">
-			{game.home_leader.name} — {game.home_leader.points} PTS, {game.home_leader.rebounds} REB, {game.home_leader.assists} AST
+			{topScorer.name} — {topScorer.points} PTS, {topScorer.rebounds} REB, {topScorer.assists} AST
 		</div>
 	{/if}
 </div>
