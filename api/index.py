@@ -18,32 +18,38 @@ app.add_middleware(
 # Debug endpoint — always works, no local imports needed
 @app.get("/api/health")
 def health():
-    root = str(Path(__file__).resolve().parent.parent)
-    cwd = os.getcwd()
-    files_at_root = os.listdir(root) if os.path.isdir(root) else "NOT A DIR"
-    files_at_cwd = os.listdir(cwd)
-    nba_api_exists = os.path.isdir(os.path.join(root, "nba_api"))
-    web_exists = os.path.isdir(os.path.join(root, "web"))
+    import requests as req
+    import traceback
 
-    # Try importing
-    import_error = None
+    # Test CDN endpoint (fast, should always work)
+    cdn_result = None
+    cdn_error = None
     try:
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from web.backend.routers.api import router
+        r = req.get(
+            "https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json",
+            headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.nba.com/"},
+            timeout=9,
+        )
+        cdn_result = {"status": r.status_code, "games": len(r.json().get("scoreboard", {}).get("games", []))}
     except Exception as e:
-        import_error = str(e)
+        cdn_error = traceback.format_exc()
+
+    # Test stats.nba.com (slower)
+    stats_result = None
+    stats_error = None
+    try:
+        r = req.get(
+            "https://stats.nba.com/stats/scoreboardv3?GameDate=2026-04-12&LeagueID=00",
+            headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.nba.com/", "Accept": "application/json"},
+            timeout=9,
+        )
+        stats_result = {"status": r.status_code, "games": len(r.json().get("scoreboard", {}).get("games", []))}
+    except Exception as e:
+        stats_error = traceback.format_exc()
 
     return {
-        "status": "ok",
-        "root": root,
-        "cwd": cwd,
-        "files_at_root": files_at_root,
-        "files_at_cwd": files_at_cwd,
-        "nba_api_exists": nba_api_exists,
-        "web_exists": web_exists,
-        "sys_path": sys.path[:5],
-        "import_error": import_error,
+        "cdn": cdn_result or cdn_error,
+        "stats_nba": stats_result or stats_error,
     }
 
 # Try to load the real API router
