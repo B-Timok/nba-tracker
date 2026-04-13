@@ -43,6 +43,7 @@
 			bind:value={inputValue}
 			on:change={handleSubmit}
 			on:keydown={handleKeydown}
+			on:blur={() => { showInput = false; inputValue = ''; }}
 			class="date-input"
 			autofocus
 		/>
