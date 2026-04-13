@@ -2,6 +2,7 @@
 	export let data: any[];
 	export let columns: { key: string; label: string; format?: (v: any) => string }[];
 	export let filterKey: string = '';
+	export let highlightKey: string = '';
 	export let pageSize: number = 50;
 
 	let sortKey = '';
@@ -73,6 +74,8 @@
 					<th
 						class:sortable={true}
 						class:sorted={sortKey === col.key}
+						class:highlighted={highlightKey === col.key}
+						class:text-col={col.key === filterKey}
 						on:click={() => toggleSort(col.key)}
 					>
 						{col.label}
@@ -87,7 +90,7 @@
 			{#each paged as row}
 				<tr>
 					{#each columns as col}
-						<td class:text-col={col.key === filterKey}>
+						<td class:text-col={col.key === filterKey} class:highlighted={highlightKey === col.key}>
 							{fmt(col, row[col.key])}
 						</td>
 					{/each}
@@ -174,6 +177,8 @@
 	}
 
 	th:hover, th.sorted { color: var(--accent-blue); }
+	th.text-col { text-align: left; }
+	th.highlighted { color: var(--accent-orange); }
 	.sort-arrow { font-size: 0.6rem; margin-left: 0.2rem; }
 
 	td {
@@ -186,6 +191,11 @@
 	td.text-col {
 		text-align: left;
 		font-weight: 500;
+	}
+
+	td.highlighted {
+		color: var(--accent-orange);
+		font-weight: 600;
 	}
 
 	tr:hover td { background: var(--bg-card-hover); }

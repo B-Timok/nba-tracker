@@ -112,9 +112,9 @@
 	{:else if error}
 		<div class="error">{error}</div>
 	{:else if activeView === 'players'}
-		<StatsTable data={sortedPlayers} columns={playerColumns} filterKey="player_name" />
+		<StatsTable data={sortedPlayers} columns={playerColumns} filterKey="player_name" highlightKey={activeCategory} />
 	{:else}
-		<StatsTable data={sortedTeams} columns={teamColumns} filterKey="team_name" />
+		<StatsTable data={sortedTeams} columns={teamColumns} filterKey="team_name" highlightKey={activeCategory} />
 	{/if}
 </div>
 
