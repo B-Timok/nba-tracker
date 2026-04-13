@@ -80,12 +80,16 @@
 
 	onMount(async () => {
 		try {
-			// Try actual playoff data first
+			// Try actual playoff data for the current season
 			try {
 				bracket = await getPlayoffs();
-				// Check if it has real current-season data with active series
+				// Only use live mode if bracket is for the current season
+				const now = new Date();
+				const currentSeasonStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+				const currentSeason = `${currentSeasonStart}-${String(currentSeasonStart + 1).slice(-2)}`;
+				const isCurrentSeason = bracket.season === currentSeason;
 				const hasActiveSeries = bracket.series.some(s => s.high_seed.team_id > 0);
-				if (hasActiveSeries) {
+				if (isCurrentSeason && hasActiveSeries) {
 					mode = 'live';
 					loading = false;
 					return;
