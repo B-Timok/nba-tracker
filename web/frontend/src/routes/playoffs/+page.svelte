@@ -4,121 +4,173 @@
 	import { getStandings, getPlayoffs } from '$lib/api';
 	import { getTeamColor } from '$lib/teamColors';
 	import Skeleton from '$lib/components/Skeleton.svelte';
-	import type { StandingsEntry, PlayoffBracket, BracketSeries } from '$lib/types';
-
-	interface ProjectedTeam {
-		name: string;
-		tricode: string;
-		rank: number;
-		wins: number;
-		losses: number;
-		record: string;
-	}
-
-	interface ProjectedMatchup {
-		high: ProjectedTeam;
-		low: ProjectedTeam;
-	}
+	import type { StandingsEntry, PlayoffBracket, BracketSeries, BracketTeam } from '$lib/types';
 
 	let loading = true;
 	let error = '';
-	let mode: 'projected' | 'live' = 'projected';
+	let isProjected = false;
+	let seasonLabel = '';
 
-	// Projected bracket state (from standings)
-	let eastMatchups: ProjectedMatchup[] = [];
-	let westMatchups: ProjectedMatchup[] = [];
+	// Bracket data — same format for both projected and live
+	let allSeries: BracketSeries[] = [];
+
+	// Play-in teams (projected mode only)
 	let eastPlayIn: StandingsEntry[] = [];
 	let westPlayIn: StandingsEntry[] = [];
 
-	// Live bracket state (from actual playoff data)
-	let bracket: PlayoffBracket | null = null;
+	function entryToBracketTeam(e: StandingsEntry): BracketTeam {
+		// Derive tricode from city/name
+		const tricodeMap: Record<string, string> = {
+			'Oklahoma City Thunder': 'OKC', 'Golden State Warriors': 'GSW',
+			'San Antonio Spurs': 'SAS', 'New York Knicks': 'NYK',
+			'New Orleans Pelicans': 'NOP', 'Los Angeles Lakers': 'LAL',
+			'Los Angeles Clippers': 'LAC', 'Portland Trail Blazers': 'POR',
+		};
+		const key = `${e.team_city} ${e.team_name}`;
+		const tricode = tricodeMap[key] || e.team_name.substring(0, 3).toUpperCase();
 
-	function entryToTeam(e: StandingsEntry): ProjectedTeam {
 		return {
+			team_id: e.team_id,
+			city: e.team_city,
 			name: e.team_name,
-			tricode: e.team_city === 'Oklahoma City' ? 'OKC' :
-			         e.team_city === 'Golden State' ? 'GSW' :
-			         e.team_city === 'San Antonio' ? 'SAS' :
-			         e.team_city === 'New York' ? 'NYK' :
-			         e.team_city === 'New Orleans' ? 'NOP' :
-			         e.team_city === 'Los Angeles' && e.team_name === 'Lakers' ? 'LAL' :
-			         e.team_city === 'Los Angeles' && e.team_name === 'Clippers' ? 'LAC' :
-			         e.team_name.substring(0, 3).toUpperCase(),
+			tricode,
 			rank: e.playoff_rank,
-			wins: e.wins,
-			losses: e.losses,
-			record: e.record,
+			wins: 0,
+			reg_wins: e.wins,
+			reg_losses: e.losses,
 		};
 	}
 
 	function buildProjectedBracket(entries: StandingsEntry[]) {
-		for (const conf of ['East', 'West']) {
+		const series: BracketSeries[] = [];
+		let orderCounter = 1;
+
+		for (const conf of ['East', 'West'] as const) {
 			const teams = entries
 				.filter(e => e.conference === conf)
 				.sort((a, b) => a.playoff_rank - b.playoff_rank);
 
 			const top8 = teams.slice(0, 8);
-			const playIn = teams.slice(6, 10);
 
-			// 1v8, 2v7, 3v6, 4v5
-			const matchups: ProjectedMatchup[] = [
-				{ high: entryToTeam(top8[0]), low: entryToTeam(top8[7]) },
-				{ high: entryToTeam(top8[1]), low: entryToTeam(top8[6]) },
-				{ high: entryToTeam(top8[2]), low: entryToTeam(top8[5]) },
-				{ high: entryToTeam(top8[3]), low: entryToTeam(top8[4]) },
-			];
-
-			if (conf === 'East') {
-				eastMatchups = matchups;
-				eastPlayIn = playIn;
-			} else {
-				westMatchups = matchups;
-				westPlayIn = playIn;
+			// Round 1: 1v8, 2v7, 3v6, 4v5
+			const pairings = [[0, 7], [1, 6], [2, 5], [3, 4]];
+			for (const [hi, lo] of pairings) {
+				series.push({
+					series_id: `proj-${conf}-r1-${orderCounter}`,
+					round: 1,
+					series_number: orderCounter,
+					conference: conf,
+					round_name: 'First Round',
+					series_text: `(${top8[hi].wins}-${top8[hi].losses}) vs (${top8[lo].wins}-${top8[lo].losses})`,
+					series_status: 0,
+					series_winner: 0,
+					high_seed: entryToBracketTeam(top8[hi]),
+					low_seed: entryToBracketTeam(top8[lo]),
+					display_order: orderCounter,
+				});
+				orderCounter++;
 			}
+
+			// Round 2: TBD placeholders (winners of R1)
+			for (let i = 0; i < 2; i++) {
+				series.push({
+					series_id: `proj-${conf}-r2-${orderCounter}`,
+					round: 2,
+					series_number: orderCounter,
+					conference: conf,
+					round_name: 'Conf. Semis',
+					series_text: '',
+					series_status: 0,
+					series_winner: 0,
+					high_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+					low_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+					display_order: orderCounter,
+				});
+				orderCounter++;
+			}
+
+			// Round 3: TBD (Conf Finals)
+			series.push({
+				series_id: `proj-${conf}-r3-${orderCounter}`,
+				round: 3,
+				series_number: orderCounter,
+				conference: conf,
+				round_name: 'Conf. Finals',
+				series_text: '',
+				series_status: 0,
+				series_winner: 0,
+				high_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+				low_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+				display_order: orderCounter,
+			});
+			orderCounter++;
+
+			// Play-in teams
+			const playIn = teams.slice(6, 10);
+			if (conf === 'East') eastPlayIn = playIn;
+			else westPlayIn = playIn;
 		}
+
+		// Finals: TBD
+		series.push({
+			series_id: 'proj-finals',
+			round: 4,
+			series_number: orderCounter,
+			conference: '',
+			round_name: 'NBA Finals',
+			series_text: '',
+			series_status: 0,
+			series_winner: 0,
+			high_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+			low_seed: { team_id: 0, city: '', name: '', tricode: '', rank: 0, wins: 0, reg_wins: 0, reg_losses: 0 },
+			display_order: orderCounter,
+		});
+
+		allSeries = series;
 	}
 
 	onMount(async () => {
 		try {
 			// Try actual playoff data for the current season
 			try {
-				bracket = await getPlayoffs();
-				// Only use live mode if bracket is for the current season
+				const bracket = await getPlayoffs();
 				const now = new Date();
 				const currentSeasonStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
 				const currentSeason = `${currentSeasonStart}-${String(currentSeasonStart + 1).slice(-2)}`;
 				const isCurrentSeason = bracket.season === currentSeason;
 				const hasActiveSeries = bracket.series.some(s => s.high_seed.team_id > 0);
 				if (isCurrentSeason && hasActiveSeries) {
-					mode = 'live';
+					allSeries = bracket.series;
+					seasonLabel = bracket.season;
+					isProjected = false;
 					loading = false;
 					return;
 				}
 			} catch {
-				// No live bracket available, fall through to projected
+				// Fall through
 			}
 
-			// Fall back to projected bracket from standings
-			mode = 'projected';
+			// Projected from standings
+			isProjected = true;
 			const standings = await getStandings();
 			buildProjectedBracket(standings);
+			const now = new Date();
+			const startYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+			seasonLabel = `${startYear}-${String(startYear + 1).slice(-2)}`;
 		} catch (e: any) {
 			error = e.message || 'Failed to load bracket data';
 		}
 		loading = false;
 	});
 
-	// Live bracket helpers
 	function getSeriesByRoundConf(round: number, conference: string): BracketSeries[] {
-		if (!bracket) return [];
-		return bracket.series
+		return allSeries
 			.filter(s => s.round === round && s.conference === conference)
 			.sort((a, b) => a.display_order - b.display_order);
 	}
 
 	function getFinals(): BracketSeries | null {
-		if (!bracket) return null;
-		const finals = bracket.series.filter(s => s.round === 4);
+		const finals = allSeries.filter(s => s.round === 4);
 		return finals.length > 0 ? finals[0] : null;
 	}
 
@@ -147,92 +199,18 @@
 	{:else if error}
 		<h1>Playoffs</h1>
 		<div class="error">{error}</div>
-	{:else if mode === 'projected'}
-		<!-- PROJECTED BRACKET FROM STANDINGS -->
-		<h1>Projected Playoff Bracket</h1>
-		<p class="subtitle">Based on current standings. Updates as the season progresses.</p>
-
-		<div class="projected-container">
-			<!-- East bracket -->
-			<div class="projected-conf">
-				<div class="conf-label">Eastern Conference</div>
-				<div class="projected-matchups">
-					{#each eastMatchups as matchup, i}
-						<div class="matchup" in:fly={{ x: -20, duration: 300, delay: i * 100 }}>
-							<div class="team-row" style="--team-color: {getTeamColor(matchup.high.tricode)}">
-								<span class="seed">{matchup.high.rank}</span>
-								<span class="team-name">{matchup.high.name}</span>
-								<span class="team-record">{matchup.high.record}</span>
-							</div>
-							<div class="vs-divider">vs</div>
-							<div class="team-row" style="--team-color: {getTeamColor(matchup.low.tricode)}">
-								<span class="seed">{matchup.low.rank}</span>
-								<span class="team-name">{matchup.low.name}</span>
-								<span class="team-record">{matchup.low.record}</span>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				{#if eastPlayIn.length > 0}
-					<div class="playin-section">
-						<div class="playin-label">Play-In Tournament</div>
-						{#each eastPlayIn as team, i}
-							<div class="playin-team" in:fly={{ x: -10, duration: 200, delay: i * 50 + 400 }}>
-								<span class="seed">{team.playoff_rank}</span>
-								<span class="team-name">{team.team_name}</span>
-								<span class="team-record">{team.record}</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-
-			<!-- West bracket -->
-			<div class="projected-conf">
-				<div class="conf-label">Western Conference</div>
-				<div class="projected-matchups">
-					{#each westMatchups as matchup, i}
-						<div class="matchup" in:fly={{ x: 20, duration: 300, delay: i * 100 }}>
-							<div class="team-row" style="--team-color: {getTeamColor(matchup.high.tricode)}">
-								<span class="seed">{matchup.high.rank}</span>
-								<span class="team-name">{matchup.high.name}</span>
-								<span class="team-record">{matchup.high.record}</span>
-							</div>
-							<div class="vs-divider">vs</div>
-							<div class="team-row" style="--team-color: {getTeamColor(matchup.low.tricode)}">
-								<span class="seed">{matchup.low.rank}</span>
-								<span class="team-name">{matchup.low.name}</span>
-								<span class="team-record">{matchup.low.record}</span>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				{#if westPlayIn.length > 0}
-					<div class="playin-section">
-						<div class="playin-label">Play-In Tournament</div>
-						{#each westPlayIn as team, i}
-							<div class="playin-team" in:fly={{ x: 10, duration: 200, delay: i * 50 + 400 }}>
-								<span class="seed">{team.playoff_rank}</span>
-								<span class="team-name">{team.team_name}</span>
-								<span class="team-record">{team.record}</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-	{:else if bracket}
-		<!-- LIVE BRACKET -->
-		<h1>Playoffs {bracket.season}</h1>
+	{:else}
+		<h1>{isProjected ? 'Projected Playoff Bracket' : 'Playoffs'} {seasonLabel}</h1>
+		{#if isProjected}
+			<p class="subtitle">Based on current standings. Updates as the season progresses.</p>
+		{/if}
 
 		<div class="bracket-container">
 			<div class="conf-label east-label">Eastern Conference</div>
 			<div class="placeholder"></div>
 			<div class="conf-label west-label">Western Conference</div>
 
+			<!-- East: R1 → R2 → CF -->
 			{#each [1, 2, 3] as round}
 				<div class="round round-{round} east-round">
 					{#each getSeriesByRoundConf(round, 'East') as series, i}
@@ -241,14 +219,24 @@
 								<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
 									<span class="seed">{series.high_seed.rank}</span>
 									<span class="team-name">{series.high_seed.name}</span>
-									<span class="series-wins">{series.high_seed.wins}</span>
+									{#if isProjected}
+										<span class="team-record">{series.high_seed.reg_wins}-{series.high_seed.reg_losses}</span>
+									{:else}
+										<span class="series-wins">{series.high_seed.wins}</span>
+									{/if}
 								</div>
 								<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
 									<span class="seed">{series.low_seed.rank}</span>
 									<span class="team-name">{series.low_seed.name}</span>
-									<span class="series-wins">{series.low_seed.wins}</span>
+									{#if isProjected}
+										<span class="team-record">{series.low_seed.reg_wins}-{series.low_seed.reg_losses}</span>
+									{:else}
+										<span class="series-wins">{series.low_seed.wins}</span>
+									{/if}
 								</div>
-								<div class="series-status">{series.series_text}</div>
+								{#if series.series_text}
+									<div class="series-status">{series.series_text}</div>
+								{/if}
 							{:else}
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
@@ -258,6 +246,7 @@
 				</div>
 			{/each}
 
+			<!-- Finals -->
 			<div class="finals">
 				<div class="finals-label">NBA Finals</div>
 				{#if finals && hasTeams(finals)}
@@ -272,7 +261,9 @@
 							<span class="team-name">{finals.low_seed.name}</span>
 							<span class="series-wins">{finals.low_seed.wins}</span>
 						</div>
-						<div class="series-status">{finals.series_text}</div>
+						{#if finals.series_text}
+							<div class="series-status">{finals.series_text}</div>
+						{/if}
 					</div>
 				{:else}
 					<div class="matchup finals-matchup">
@@ -282,22 +273,33 @@
 				{/if}
 			</div>
 
+			<!-- West: CF ← R2 ← R1 -->
 			{#each [3, 2, 1] as round}
 				<div class="round round-{round} west-round">
 					{#each getSeriesByRoundConf(round, 'West') as series, i}
 						<div class="matchup" in:fly={{ x: 20, duration: 300, delay: i * 100 + (4 - round) * 150 }}>
 							{#if hasTeams(series)}
 								<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
-									<span class="series-wins">{series.high_seed.wins}</span>
+									{#if isProjected}
+										<span class="team-record">{series.high_seed.reg_wins}-{series.high_seed.reg_losses}</span>
+									{:else}
+										<span class="series-wins">{series.high_seed.wins}</span>
+									{/if}
 									<span class="team-name right">{series.high_seed.name}</span>
 									<span class="seed">{series.high_seed.rank}</span>
 								</div>
 								<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
-									<span class="series-wins">{series.low_seed.wins}</span>
+									{#if isProjected}
+										<span class="team-record">{series.low_seed.reg_wins}-{series.low_seed.reg_losses}</span>
+									{:else}
+										<span class="series-wins">{series.low_seed.wins}</span>
+									{/if}
 									<span class="team-name right">{series.low_seed.name}</span>
 									<span class="seed">{series.low_seed.rank}</span>
 								</div>
-								<div class="series-status">{series.series_text}</div>
+								{#if series.series_text}
+									<div class="series-status">{series.series_text}</div>
+								{/if}
 							{:else}
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
 								<div class="team-row tbd"><span class="team-name">TBD</span></div>
@@ -307,6 +309,35 @@
 				</div>
 			{/each}
 		</div>
+
+		<!-- Play-In section (projected mode only) -->
+		{#if isProjected && (eastPlayIn.length > 0 || westPlayIn.length > 0)}
+			<div class="playin-container">
+				<h2>Play-In Tournament</h2>
+				<div class="playin-grid">
+					<div class="playin-conf">
+						<div class="playin-conf-label">East</div>
+						{#each eastPlayIn as team, i}
+							<div class="playin-team" in:fly={{ x: -10, duration: 200, delay: i * 50 + 600 }}>
+								<span class="seed">{team.playoff_rank}</span>
+								<span class="team-name">{team.team_name}</span>
+								<span class="team-record">{team.record}</span>
+							</div>
+						{/each}
+					</div>
+					<div class="playin-conf">
+						<div class="playin-conf-label">West</div>
+						{#each westPlayIn as team, i}
+							<div class="playin-team" in:fly={{ x: 10, duration: 200, delay: i * 50 + 600 }}>
+								<span class="seed">{team.playoff_rank}</span>
+								<span class="team-name">{team.team_name}</span>
+								<span class="team-record">{team.record}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -333,79 +364,24 @@
 		margin-bottom: 2rem;
 	}
 
-	/* ===== PROJECTED BRACKET ===== */
-
-	.projected-container {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
-	}
-
-	.projected-conf {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.projected-matchups {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.vs-divider {
-		text-align: center;
-		font-size: 0.65rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: var(--text-muted);
-		padding: 0.15rem 0;
-		border-top: 1px solid var(--border-subtle);
-	}
-
-	.team-record {
-		font-size: 0.75rem;
-		color: var(--text-muted);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.playin-section {
-		margin-top: 0.5rem;
-		padding-top: 1rem;
-		border-top: 1px dashed var(--border-subtle);
-	}
-
-	.playin-label {
-		font-family: var(--font-heading);
-		font-size: 0.75rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: var(--text-muted);
-		margin-bottom: 0.5rem;
-	}
-
-	.playin-team {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.4rem 0.75rem;
-		font-size: 0.85rem;
-	}
-
-	.playin-team .team-name {
-		flex: 1;
-	}
-
-	/* ===== LIVE BRACKET ===== */
-
+	/* 7-column grid: E-R1 | E-R2 | E-CF | Finals | W-CF | W-R2 | W-R1 */
 	.bracket-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr auto 1fr 1fr 1fr;
 		grid-template-rows: auto 1fr;
 		gap: 0.5rem;
 		align-items: start;
+	}
+
+	.conf-label {
+		font-family: var(--font-heading);
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		text-align: center;
+		padding-bottom: 0.5rem;
 	}
 
 	.east-label { grid-column: 1 / 4; grid-row: 1; }
@@ -450,6 +426,13 @@
 		letter-spacing: 0.1em;
 	}
 
+	.matchup {
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+	}
+
 	.finals-matchup {
 		min-width: 180px;
 	}
@@ -460,26 +443,6 @@
 
 	.finals-matchup .series-wins {
 		font-size: 1.2rem;
-	}
-
-	/* ===== SHARED ===== */
-
-	.conf-label {
-		font-family: var(--font-heading);
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		text-align: center;
-		padding-bottom: 0.5rem;
-	}
-
-	.matchup {
-		background: var(--bg-card);
-		border: 1px solid var(--border-subtle);
-		border-radius: var(--radius-sm);
-		overflow: hidden;
 	}
 
 	.team-row {
@@ -548,6 +511,12 @@
 		font-style: italic;
 	}
 
+	.team-record {
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+	}
+
 	.series-wins {
 		font-family: var(--font-heading);
 		font-size: 1rem;
@@ -563,6 +532,50 @@
 		padding: 0.3rem 0.5rem;
 		border-top: 1px solid var(--border-subtle);
 		background: rgba(0, 0, 0, 0.2);
+	}
+
+	/* Play-In section */
+	.playin-container {
+		margin-top: 2.5rem;
+		padding-top: 1.5rem;
+		border-top: 1px dashed var(--border-subtle);
+	}
+
+	.playin-container h2 {
+		text-align: center;
+		font-size: 1.1rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
+	}
+
+	.playin-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		max-width: 700px;
+		margin: 0 auto;
+	}
+
+	.playin-conf-label {
+		font-family: var(--font-heading);
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--text-muted);
+		margin-bottom: 0.5rem;
+	}
+
+	.playin-team {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.4rem 0.75rem;
+		font-size: 0.85rem;
+	}
+
+	.playin-team .team-name {
+		flex: 1;
 	}
 
 	.error {
