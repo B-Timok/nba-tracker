@@ -89,12 +89,12 @@
 
 		<div class="legend">
 			<span class="legend-title">Key:</span>
-			<span><strong>x</strong> — clinched playoff</span>
-			<span><strong>y</strong> — clinched division</span>
-			<span><strong>z</strong> — clinched conference</span>
 			<span><strong>w</strong> — best overall record</span>
-			<span><strong>p</strong> — clinched play-in</span>
-			<span><strong>e</strong> — eliminated</span>
+			<span><strong>x</strong> — clinched playoff</span>
+			<span><strong>p/pi</strong> — clinched play-in</span>
+			<span><strong>a/c/se/sw/nw/pac</strong> — clinched division</span>
+			<span><strong>o</strong> — eliminated from playoffs</span>
+			<span><strong>e</strong> — eliminated from contention</span>
 		</div>
 	{/if}
 </div>
