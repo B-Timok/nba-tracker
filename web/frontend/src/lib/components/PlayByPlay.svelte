@@ -90,7 +90,7 @@
 	}
 
 	.play.field-goal {
-		background: rgba(59, 130, 246, 0.05);
+		background: rgba(255, 255, 255, 0.03);
 	}
 
 	.clock {

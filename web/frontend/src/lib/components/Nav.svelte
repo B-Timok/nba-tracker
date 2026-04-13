@@ -91,7 +91,8 @@
 	}
 
 	.nav-link.active {
-		color: var(--accent-blue);
-		background: rgba(59, 130, 246, 0.1);
+		color: var(--text-primary);
+		background: var(--bg-card);
+		border-bottom: 2px solid var(--accent-orange);
 	}
 </style>

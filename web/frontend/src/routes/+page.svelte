@@ -86,7 +86,7 @@
 	.scoreboard h1 {
 		font-size: 2rem;
 		margin-bottom: 1.5rem;
-		background: linear-gradient(135deg, var(--accent-blue), var(--accent-orange));
+		background: linear-gradient(135deg, var(--text-primary), var(--accent-orange));
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
