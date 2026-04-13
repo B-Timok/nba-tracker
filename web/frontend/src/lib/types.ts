@@ -159,3 +159,58 @@ export interface TeamStats {
 	ft_pct: number;
 	plus_minus: number;
 }
+
+export interface PlayerBio {
+	player_id: number;
+	first_name: string;
+	last_name: string;
+	display_name: string;
+	birthdate: string;
+	height: string;
+	weight: string;
+	position: string;
+	jersey: string;
+	team_id: number;
+	team_name: string;
+	team_abbreviation: string;
+	team_city: string;
+	country: string;
+	draft_year: string;
+	draft_round: string;
+	draft_number: string;
+	from_year: string;
+	to_year: string;
+	roster_status: string;
+}
+
+export interface PlayerHeadline {
+	pts: number;
+	ast: number;
+	reb: number;
+	pie: number;
+	time_frame: string;
+}
+
+export interface PlayerSeason {
+	season: string;
+	team_abbreviation: string;
+	gp: number;
+	gs: number;
+	mpg: number;
+	ppg: number;
+	rpg: number;
+	apg: number;
+	spg: number;
+	bpg: number;
+	topg: number;
+	fg_pct: number;
+	fg3_pct: number;
+	ft_pct: number;
+}
+
+export interface PlayerProfile {
+	bio: PlayerBio;
+	headline: PlayerHeadline;
+	seasons: PlayerSeason[];
+	career_totals: PlayerSeason;
+}

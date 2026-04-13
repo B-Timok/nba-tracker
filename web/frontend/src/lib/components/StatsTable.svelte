@@ -91,7 +91,11 @@
 				<tr>
 					{#each columns as col}
 						<td class:text-col={col.key === filterKey} class:highlighted={highlightKey === col.key}>
-							{fmt(col, row[col.key])}
+							{#if col.key === filterKey && row.player_id}
+								<a href="/player/{row.player_id}" class="player-link">{fmt(col, row[col.key])}</a>
+							{:else}
+								{fmt(col, row[col.key])}
+							{/if}
 						</td>
 					{/each}
 				</tr>
@@ -191,6 +195,14 @@
 	td.text-col {
 		text-align: left;
 		font-weight: 500;
+	}
+
+	.player-link {
+		color: var(--text-primary);
+		transition: color 0.15s ease;
+	}
+	.player-link:hover {
+		color: var(--accent-orange);
 	}
 
 	td.highlighted {
