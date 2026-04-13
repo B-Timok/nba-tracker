@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import type { Game } from '$lib/types';
 
 function formatDate(d: Date): string {
 	return d.toISOString().split('T')[0];
@@ -25,3 +26,4 @@ function createDateStore() {
 }
 
 export const currentDate = createDateStore();
+export const selectedGame = writable<Game | null>(null);

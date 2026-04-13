@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { getBoxScore, getPlayByPlay } from '$lib/api';
+	import { selectedGame } from '$lib/stores';
 	import BoxScore from '$lib/components/BoxScore.svelte';
 	import PlayByPlay from '$lib/components/PlayByPlay.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
@@ -13,6 +15,8 @@
 	let error = '';
 	let activeTab: 'boxscore' | 'playbyplay' = 'boxscore';
 
+	// Get game info from store (has records from scoreboard)
+	const game = get(selectedGame);
 	$: gameId = $page.params.id;
 
 	onMount(async () => {
@@ -22,6 +26,15 @@
 				getPlayByPlay(gameId),
 			]);
 			boxScore = bs;
+			// Use records from the scoreboard game data if available
+			if (game && boxScore) {
+				boxScore.away.team.record = game.away_team.record;
+				boxScore.away.team.wins = game.away_team.wins;
+				boxScore.away.team.losses = game.away_team.losses;
+				boxScore.home.team.record = game.home_team.record;
+				boxScore.home.team.wins = game.home_team.wins;
+				boxScore.home.team.losses = game.home_team.losses;
+			}
 			plays = pbp;
 		} catch (e: any) {
 			error = e.message || 'Failed to load game data';
@@ -43,7 +56,9 @@
 		<div class="score-header">
 			<div class="team-side away">
 				<div class="team-name">{boxScore.away.team.city} {boxScore.away.team.name}</div>
-				<div class="team-record">{boxScore.away.team.record}</div>
+				{#if boxScore.away.team.record !== '0-0'}
+					<div class="team-record">{boxScore.away.team.record}</div>
+				{/if}
 				<div class="team-score" class:winning={boxScore.away.team.score > boxScore.home.team.score}>
 					{boxScore.away.team.score}
 				</div>
@@ -54,7 +69,9 @@
 					{boxScore.home.team.score}
 				</div>
 				<div class="team-name">{boxScore.home.team.city} {boxScore.home.team.name}</div>
-				<div class="team-record">{boxScore.home.team.record}</div>
+				{#if boxScore.home.team.record !== '0-0'}
+					<div class="team-record">{boxScore.home.team.record}</div>
+				{/if}
 			</div>
 		</div>
 
@@ -124,8 +141,9 @@
 
 	.team-name {
 		font-family: var(--font-heading);
-		font-size: 1.25rem;
+		font-size: 1.4rem;
 		font-weight: 700;
+		color: #ffffff;
 	}
 
 	.team-record {
@@ -170,8 +188,8 @@
 	}
 
 	.tab.active {
-		color: var(--accent-blue);
-		border-bottom-color: var(--accent-blue);
+		color: var(--text-primary);
+		border-bottom-color: var(--accent-orange);
 	}
 
 	.box-scores {

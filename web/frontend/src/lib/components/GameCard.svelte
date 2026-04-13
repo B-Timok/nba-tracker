@@ -1,13 +1,14 @@
 <script lang="ts">
 	import type { Game } from '$lib/types';
 	import { getTeamColor } from '$lib/teamColors';
+	import { selectedGame } from '$lib/stores';
 
 	export let game: Game;
 
 	$: statusClass = game.is_live ? 'live' : game.is_final ? 'final' : 'scheduled';
 </script>
 
-<a href="/game/{game.game_id}" class="card {statusClass}">
+<a href="/game/{game.game_id}" class="card {statusClass}" on:click={() => selectedGame.set(game)}>
 	<div class="status-badge">
 		{#if game.is_live}
 			<span class="live-dot"></span>
