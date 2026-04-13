@@ -386,7 +386,8 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
 		grid-template-rows: auto auto 1fr;
-		gap: 0.5rem;
+		gap: 0.5rem 0.5rem;
+		row-gap: 0;
 		align-items: start;
 	}
 
@@ -412,7 +413,8 @@
 		align-items: center;
 		align-self: end;
 		gap: 0.5rem;
-		padding-bottom: 0.25rem;
+		padding-bottom: 0;
+		margin-bottom: 0;
 	}
 
 	.finals-label {
