@@ -509,6 +509,7 @@
 		color: var(--text-muted);
 		min-width: 1rem;
 		text-align: center;
+		flex-shrink: 0;
 	}
 
 	.team-name {
