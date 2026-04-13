@@ -517,7 +517,10 @@
 		font-size: 0.8rem;
 		font-weight: 600;
 		flex: 1;
+		min-width: 0;
 		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.team-name.right {
