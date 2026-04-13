@@ -1,5 +1,8 @@
 import json
+import requests
 from pathlib import Path
+from unittest.mock import patch, MagicMock
+from datetime import date
 from nba_api.client import NBAClient
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -115,3 +118,79 @@ def test_parse_team_stats():
     first = stats[0]
     assert first.team_name != ""
     assert first.gp > 0
+
+
+def _mock_response(fixture_name):
+    with open(FIXTURES / fixture_name) as f:
+        data = json.load(f)
+    mock = MagicMock()
+    mock.status_code = 200
+    mock.json.return_value = data
+    mock.raise_for_status = MagicMock()
+    return mock
+
+
+def test_get_scoreboard_uses_cdn_for_today():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("scoreboard_20260412.json")) as mock_get:
+        games = client.get_scoreboard(date(2026, 4, 12))
+        assert len(games) > 0
+        mock_get.assert_called_once()
+
+
+def test_get_scoreboard_caches_final_games():
+    client = NBAClient()
+    mock_resp = _mock_response("scoreboard_20260412.json")
+    with patch.object(client._session, "get", return_value=mock_resp) as mock_get:
+        # First call fetches
+        games1 = client.get_scoreboard(date(2026, 4, 12))
+        # Second call should use cache (all games are final)
+        games2 = client.get_scoreboard(date(2026, 4, 12))
+        assert mock_get.call_count == 1
+        assert len(games1) == len(games2)
+
+
+def test_get_boxscore():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("boxscore_0022501186.json")):
+        home, away = client.get_boxscore("0022501186")
+        assert home.team.name == "Celtics"
+        assert away.team.name == "Magic"
+
+
+def test_get_playbyplay():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("playbyplay_0022501186.json")):
+        actions = client.get_playbyplay("0022501186")
+        assert len(actions) > 0
+
+
+def test_get_standings():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("standings_2025-26.json")):
+        entries = client.get_standings("2025-26")
+        assert len(entries) == 30
+
+
+def test_get_player_stats():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("player_stats_2025-26.json")):
+        stats = client.get_player_stats("2025-26")
+        assert len(stats) > 100
+
+
+def test_get_team_stats():
+    client = NBAClient()
+    with patch.object(client._session, "get", return_value=_mock_response("team_stats_2025-26.json")):
+        stats = client.get_team_stats("2025-26")
+        assert len(stats) == 30
+
+
+def test_network_error_raises():
+    client = NBAClient()
+    with patch.object(client._session, "get", side_effect=requests.exceptions.Timeout("timeout")):
+        try:
+            client.get_scoreboard(date(2026, 4, 12))
+            assert False, "Should have raised"
+        except requests.exceptions.Timeout:
+            pass

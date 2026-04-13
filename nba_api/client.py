@@ -1,4 +1,6 @@
 import requests
+import time
+from datetime import date
 from typing import Optional
 from nba_api.endpoints import NBAEndpoints
 from nba_api.models import (
@@ -6,14 +8,37 @@ from nba_api.models import (
     PlayerBoxScore, TeamBoxScore, PlayAction,
     StandingsEntry, PlayerStats, TeamStats,
 )
+from nba_api.date_utils import game_date_to_season
 
 REQUEST_TIMEOUT = 5
+
+CACHE_LONG = 3600  # 1 hour for completed data
+CACHE_NONE = 0     # No caching for live data
+
+
+class _Cache:
+    def __init__(self):
+        self._data: dict[str, tuple[float, any]] = {}
+
+    def get(self, key: str, max_age: float) -> any:
+        if key in self._data:
+            ts, value = self._data[key]
+            if time.time() - ts < max_age:
+                return value
+        return None
+
+    def set(self, key: str, value: any) -> None:
+        self._data[key] = (time.time(), value)
+
+    def clear(self) -> None:
+        self._data.clear()
 
 
 class NBAClient:
     def __init__(self):
         self._session = requests.Session()
         self._session.headers.update(NBAEndpoints.stats_headers())
+        self._cache = _Cache()
 
     def _get(self, url: str) -> dict:
         response = self._session.get(url, timeout=REQUEST_TIMEOUT)
@@ -276,3 +301,81 @@ class NBAClient:
                 away_leader=self._parse_leader(leaders.get("awayLeaders")),
             ))
         return games
+
+    def get_scoreboard(self, game_date: date) -> list[Game]:
+        key = f"scoreboard:{game_date.isoformat()}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        today = date.today()
+        if game_date == today:
+            url = NBAEndpoints.scoreboard_today()
+        else:
+            url = NBAEndpoints.scoreboard(game_date.isoformat())
+
+        raw = self._get(url)
+        games = self._parse_scoreboard(raw)
+
+        # Only cache if no live games
+        all_final = all(g.is_final or g.is_scheduled for g in games) and len(games) > 0
+        no_live = not any(g.is_live for g in games)
+        if all_final and no_live:
+            self._cache.set(key, games)
+
+        return games
+
+    def get_boxscore(self, game_id: str) -> tuple[TeamBoxScore, TeamBoxScore]:
+        key = f"boxscore:{game_id}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        raw = self._get(NBAEndpoints.boxscore(game_id))
+        result = self._parse_boxscore(raw)
+        self._cache.set(key, result)
+        return result
+
+    def get_playbyplay(self, game_id: str) -> list[PlayAction]:
+        key = f"playbyplay:{game_id}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        raw = self._get(NBAEndpoints.playbyplay(game_id))
+        result = self._parse_playbyplay(raw)
+        self._cache.set(key, result)
+        return result
+
+    def get_standings(self, season: str) -> list[StandingsEntry]:
+        key = f"standings:{season}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        raw = self._get(NBAEndpoints.standings(season))
+        result = self._parse_standings(raw)
+        self._cache.set(key, result)
+        return result
+
+    def get_player_stats(self, season: str) -> list[PlayerStats]:
+        key = f"player_stats:{season}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        raw = self._get(NBAEndpoints.player_stats(season))
+        result = self._parse_player_stats(raw)
+        self._cache.set(key, result)
+        return result
+
+    def get_team_stats(self, season: str) -> list[TeamStats]:
+        key = f"team_stats:{season}"
+        cached = self._cache.get(key, CACHE_LONG)
+        if cached is not None:
+            return cached
+
+        raw = self._get(NBAEndpoints.team_stats(season))
+        result = self._parse_team_stats(raw)
+        self._cache.set(key, result)
+        return result
