@@ -10,7 +10,7 @@ from nba_api.models import (
 )
 from nba_api.date_utils import game_date_to_season
 
-REQUEST_TIMEOUT = 5
+REQUEST_TIMEOUT = 15
 
 CACHE_LONG = 3600  # 1 hour for completed data
 CACHE_NONE = 0     # No caching for live data
