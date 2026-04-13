@@ -1,62 +1,89 @@
-# NBA Live Scoreboard CLI
+# NBA Live Scoreboard
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [How to Run](#how-to-run)
-- [Program Description](#program-description)
-- [Example Usage](#example-usage)
+A Python application for browsing NBA scores, box scores, play-by-play, standings, and player/team stats. Supports full historical date navigation using the NBA's public API.
 
-## Introduction
+## Features
 
-This is a Python CLI application that provides live NBA game scoreboard data using the NBA API. It displays information about the ongoing and completed games, including team names, scores, and stat leaders.
+- **Scoreboard** — View all games for any date with scores, status, and game leaders
+- **Box Score** — Full player stats (points, rebounds, assists, shooting splits, +/-) with starters/bench split
+- **Play-by-Play** — Scrollable feed of every play, grouped by quarter
+- **Standings** — Eastern and Western conference standings with W/L, PCT, GB, streak, L10
+- **Player/Team Stats** — Season averages sorted by PPG, with search/filter
+- **Date Navigation** — Browse any date in NBA history
+- **Live Updates** — Auto-refreshes every 15 seconds when live games are in progress
 
 ## Prerequisites
 
-- Python installed on your system (Python 3 is recommended).
-- Required Python libraries (requests, datetime, pytz).
+- Python 3.12+
+- pip or uv
 
-You can install the required libraries using pip:
+## Setup
 
-## How to Run
+```bash
+# Clone and enter the project
+cd sportsScores
 
-1. Open your terminal or command prompt.
-2. Navigate to the directory where the Python script is located.
-3. Run the script using the following command:
+# Create virtual environment and install dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-    ```
-    python CLI_Scores.py
-    ```
+## Usage
 
-## Program Description
+### Interactive TUI (recommended)
 
-The program makes an HTTP GET request to the NBA API to fetch live scoreboard data.
+```bash
+.venv/bin/python -m cli
+```
 
-It processes the JSON response to extract information about NBA games.
+**Keyboard Controls:**
 
-The program displays the following information for each game:
-    
-- Home team and away team names.
-- Wins and losses for both teams.
-- Game scores.
-- Game status (whether the game has started, is ongoing(with quarter information), or has ended).
-- If the game hasn't started yet, it also displays the scheduled start time in Pacific Time (PST).
+| Key | Action |
+|-----|--------|
+| `1` | Scoreboard |
+| `2` | Standings |
+| `3` | Stats |
+| Left/Right | Change date |
+| `d` | Go to specific date |
+| Enter | Open game detail (box score) |
+| `p` | Play-by-play (from box score) |
+| `/` or `s` | Search (in stats view) |
+| Escape | Go back |
+| `r` | Refresh |
+| `q` | Quit |
 
-For ongoing or completed games, the program displays stat leaders for both the home and away teams, including points, rebounds, and assists.
+### Legacy CLI (simple output)
 
-## Example Usage
+```bash
+python CLI_Scores.py
+```
 
-Here's an example of what the program output might look like:
+## Project Structure
 
-    Milwaukee Bucks (1-0) vs Philadelphia 76ers (0-1): 118-117 (Final)
+```
+sportsScores/
+├── nba_api/              # Shared data layer
+│   ├── models.py         # Dataclasses (Game, BoxScore, Standings, etc.)
+│   ├── client.py         # API client with caching
+│   ├── endpoints.py      # NBA API URL construction
+│   └── date_utils.py     # Date parsing and season calculation
+├── cli/                  # Interactive TUI (Textual)
+│   ├── app.py            # Main app entry point
+│   ├── screens/          # Scoreboard, BoxScore, PlayByPlay, Standings, Stats
+│   └── widgets/          # DateBar, StatusBar
+├── tests/                # Unit and integration tests
+├── CLI_Scores.py         # Legacy simple CLI
+├── GUI_Scores.py         # Legacy tkinter GUI
+└── requirements.txt
+```
 
-    Milwaukee Bucks Leaders: Damian Lillard - Points: 39, Rebounds: 8, Assists: 4
-    Philadelphia 76ers Leaders: Tyrese Maxey - Points: 31, Rebounds: 4, Assists: 8
-    --------------------------------------------------
+## Tests
 
-    Los Angeles Lakers (1-1) vs Phoenix Suns (1-1): 100-95 (Final)
+```bash
+# Unit tests
+.venv/bin/pytest tests/ -v
 
-    Los Angeles Lakers Leaders: Anthony Davis - Points: 30, Rebounds: 12, Assists: 2
-    Phoenix Suns Leaders: Kevin Durant - Points: 39, Rebounds: 11, Assists: 2
-    --------------------------------------------------
-    
+# Live integration tests (hits real NBA API)
+.venv/bin/pytest tests/test_integration.py -v -m integration
+```
