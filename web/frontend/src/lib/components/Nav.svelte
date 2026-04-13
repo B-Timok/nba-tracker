@@ -78,21 +78,19 @@
 
 	.nav-link {
 		padding: 0.5rem 1rem;
-		border-radius: var(--radius-sm);
 		color: var(--text-secondary);
 		font-weight: 500;
 		font-size: 0.9rem;
-		transition: all var(--transition);
+		transition: all 0.15s ease;
+		border-bottom: 2px solid transparent;
 	}
 
 	.nav-link:hover {
 		color: var(--text-primary);
-		background: var(--bg-card);
 	}
 
 	.nav-link.active {
 		color: var(--text-primary);
-		background: var(--bg-card);
 		border-bottom: 2px solid var(--accent-orange);
 	}
 </style>
