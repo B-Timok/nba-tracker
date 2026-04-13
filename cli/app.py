@@ -3,6 +3,8 @@ from textual.binding import Binding
 
 from nba_api import NBAClient
 from cli.screens.scoreboard import ScoreboardScreen
+from cli.screens.standings import StandingsScreen
+from cli.screens.stats import StatsScreen
 
 
 class NBAApp(App):
@@ -25,17 +27,29 @@ class NBAApp(App):
     def __init__(self) -> None:
         super().__init__()
         self.client = NBAClient()
+        self._current_view = "scoreboard"
 
     def on_mount(self) -> None:
-        self.push_screen(ScoreboardScreen(self.client))
+        self.install_screen(ScoreboardScreen(self.client), name="scoreboard")
+        self.install_screen(StandingsScreen(self.client), name="standings")
+        self.install_screen(StatsScreen(self.client), name="stats")
+        self.push_screen("scoreboard")
+        self._current_view = "scoreboard"
+
+    def _switch_to(self, name: str) -> None:
+        if self._current_view == name:
+            return
+        # Pop back to base before switching
+        while len(self.screen_stack) > 1:
+            self.pop_screen()
+        self.switch_screen(name)
+        self._current_view = name
 
     def action_show_scoreboard(self) -> None:
-        self.switch_screen(ScoreboardScreen(self.client))
+        self._switch_to("scoreboard")
 
     def action_show_standings(self) -> None:
-        from cli.screens.standings import StandingsScreen
-        self.switch_screen(StandingsScreen(self.client))
+        self._switch_to("standings")
 
     def action_show_stats(self) -> None:
-        from cli.screens.stats import StatsScreen
-        self.switch_screen(StatsScreen(self.client))
+        self._switch_to("stats")
