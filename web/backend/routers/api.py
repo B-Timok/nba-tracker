@@ -371,14 +371,22 @@ def get_playoffs(season: str = Query(default=None)):
     end_year = season.split("-")[0]  # "2024"
     end_year = str(int(end_year) + 1)  # "2025"
 
-    url = f"https://cdn.nba.com/static/json/staticData/brackets/{end_year}/PlayoffBracket.json"
+    # Try requested season first, then fall back to previous years
+    data = None
+    actual_year = int(end_year)
+    for year in range(actual_year, actual_year - 3, -1):
+        url = f"https://cdn.nba.com/static/json/staticData/brackets/{year}/PlayoffBracket.json"
+        try:
+            resp = client._session.get(url, timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+            season = f"{year - 1}-{str(year)[-2:]}"
+            break
+        except Exception:
+            continue
 
-    try:
-        resp = client._session.get(url, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Playoff bracket not available: {e}")
+    if not data:
+        raise HTTPException(status_code=404, detail="No playoff bracket data available")
 
     bracket = data.get("bracket", {})
     series_list = bracket.get("playoffBracketSeries", [])
