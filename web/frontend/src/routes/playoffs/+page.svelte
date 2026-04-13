@@ -49,13 +49,16 @@
 
 	function entryToBracketTeam(e: StandingsEntry): BracketTeam {
 		const tricodeMap: Record<string, string> = {
-			'Oklahoma City Thunder': 'OKC', 'Golden State Warriors': 'GSW',
-			'San Antonio Spurs': 'SAS', 'New York Knicks': 'NYK',
-			'New Orleans Pelicans': 'NOP', 'Los Angeles Lakers': 'LAL',
-			'Los Angeles Clippers': 'LAC', 'Portland Trail Blazers': 'POR',
+			'Hawks': 'ATL', 'Celtics': 'BOS', 'Nets': 'BKN', 'Hornets': 'CHA',
+			'Bulls': 'CHI', 'Cavaliers': 'CLE', 'Mavericks': 'DAL', 'Nuggets': 'DEN',
+			'Pistons': 'DET', 'Warriors': 'GSW', 'Rockets': 'HOU', 'Pacers': 'IND',
+			'Clippers': 'LAC', 'Lakers': 'LAL', 'Grizzlies': 'MEM', 'Heat': 'MIA',
+			'Bucks': 'MIL', 'Timberwolves': 'MIN', 'Pelicans': 'NOP', 'Knicks': 'NYK',
+			'Thunder': 'OKC', 'Magic': 'ORL', '76ers': 'PHI', 'Suns': 'PHX',
+			'Trail Blazers': 'POR', 'Kings': 'SAC', 'Spurs': 'SAS', 'Raptors': 'TOR',
+			'Jazz': 'UTA', 'Wizards': 'WAS',
 		};
-		const key = `${e.team_city} ${e.team_name}`;
-		const tricode = tricodeMap[key] || e.team_name.substring(0, 3).toUpperCase();
+		const tricode = tricodeMap[e.team_name] || e.team_name.substring(0, 3).toUpperCase();
 
 		return {
 			team_id: e.team_id,

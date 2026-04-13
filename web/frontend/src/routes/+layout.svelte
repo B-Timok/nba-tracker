@@ -28,7 +28,7 @@
 
 	main.wide {
 		max-width: 100%;
-		padding: 1.5rem 1rem;
+		padding: 1.5rem 4rem;
 	}
 
 	.page {
