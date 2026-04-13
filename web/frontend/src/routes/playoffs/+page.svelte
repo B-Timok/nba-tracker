@@ -401,8 +401,8 @@
 		padding-bottom: 0.5rem;
 	}
 
-	.east-label { grid-column: 1 / 4; grid-row: 1; }
-	.west-label { grid-column: 4 / 7; grid-row: 1; }
+	.east-label { grid-column: 1 / 4; grid-row: 1; text-align: left; }
+	.west-label { grid-column: 4 / 7; grid-row: 1; text-align: right; }
 
 	.finals {
 		grid-column: 3 / 5;
@@ -410,8 +410,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		align-self: end;
 		gap: 0.5rem;
-		padding-bottom: 0.75rem;
+		padding-bottom: 0.25rem;
 	}
 
 	.finals-label {
