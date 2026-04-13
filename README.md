@@ -1,5 +1,7 @@
 # NBA Live Scoreboard
 
+<img width="1303" height="735" alt="image" src="https://github.com/user-attachments/assets/c9d20b77-781a-4b98-a98f-51f47388d8ce" />
+
 A full-stack application for browsing NBA scores, box scores, play-by-play, standings, player profiles, and playoff brackets. Features three interfaces: a web app (SvelteKit + FastAPI), an interactive terminal UI (Textual), and a simple CLI.
 
 ## Features
