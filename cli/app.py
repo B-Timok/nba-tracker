@@ -39,10 +39,10 @@ class NBAApp(App):
     def _switch_to(self, name: str) -> None:
         if self._current_view == name:
             return
-        # Pop back to base before switching
+        # Pop all screens back to the default, then push the new one
         while len(self.screen_stack) > 1:
             self.pop_screen()
-        self.switch_screen(name)
+        self.push_screen(name)
         self._current_view = name
 
     def action_show_scoreboard(self) -> None:
