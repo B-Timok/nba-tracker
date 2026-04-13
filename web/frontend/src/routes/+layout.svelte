@@ -5,11 +5,12 @@
 	import { page } from '$app/stores';
 
 	$: key = $page.url.pathname;
+	$: isWide = $page.url.pathname === '/playoffs';
 </script>
 
 <Nav />
 
-<main>
+<main class:wide={isWide}>
 	{#key key}
 		<div class="page" in:fly={{ y: 20, duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
 			<slot />
@@ -23,6 +24,11 @@
 		margin: 0 auto;
 		padding: 1.5rem;
 		min-height: calc(100vh - 64px);
+	}
+
+	main.wide {
+		max-width: 100%;
+		padding: 1.5rem 1rem;
 	}
 
 	.page {

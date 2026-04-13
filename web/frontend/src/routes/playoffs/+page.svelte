@@ -213,8 +213,7 @@
 			<p class="subtitle">Based on current standings. Updates as the season progresses.</p>
 		{/if}
 
-		<div class="bracket-scroll">
-			<div class="bracket-container">
+		<div class="bracket-container">
 				<div class="conf-label east-label">Eastern Conference</div>
 				<div class="placeholder"></div>
 				<div class="conf-label west-label">Western Conference</div>
@@ -314,7 +313,6 @@
 						{/each}
 					</div>
 				{/each}
-			</div>
 		</div>
 
 		<!-- Play-In section -->
@@ -358,7 +356,6 @@
 
 <style>
 	.playoffs-page {
-		max-width: 1200px;
 		margin: 0 auto;
 	}
 
@@ -379,19 +376,13 @@
 		margin-bottom: 2rem;
 	}
 
-	.bracket-scroll {
-		overflow-x: auto;
-		padding-bottom: 1rem;
-	}
-
-	/* 7-column grid with fixed column widths */
+	/* 7-column grid — fluid columns fill the page */
 	.bracket-container {
 		display: grid;
-		grid-template-columns: 190px 190px 190px auto 190px 190px 190px;
+		grid-template-columns: 1fr 1fr 1fr auto 1fr 1fr 1fr;
 		grid-template-rows: auto 1fr;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		align-items: start;
-		min-width: 1400px;
 	}
 
 	.conf-label {
