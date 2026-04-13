@@ -58,6 +58,7 @@ class ScoreboardScreen(Screen):
         table = self.query_one("#scoreboard-table", DataTable)
         table.add_columns("Status", "Away", "Score", "Home", "Leader")
         self.query_one("#no-games").display = False
+        table.focus()
         self.load_games()
 
     @work(thread=True)
