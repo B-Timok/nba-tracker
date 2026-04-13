@@ -172,8 +172,8 @@
 	}
 
 	.cat-btn.active {
-		color: #ffffff;
-		background: var(--accent-orange);
+		color: var(--accent-orange);
+		background: transparent;
 		border-color: var(--accent-orange);
 	}
 
