@@ -15,7 +15,6 @@ class ScoreboardScreen(Screen):
         Binding("left", "prev_date", "Prev Day", show=False),
         Binding("right", "next_date", "Next Day", show=False),
         Binding("d", "pick_date", "Go to Date", show=True),
-        Binding("enter", "select_game", "Game Detail", show=True),
         Binding("r", "refresh", "Refresh", show=True),
     ]
 
@@ -147,12 +146,8 @@ class ScoreboardScreen(Screen):
     def action_refresh(self) -> None:
         self.load_games()
 
-    def action_select_game(self) -> None:
-        table = self.query_one("#scoreboard-table", DataTable)
-        if table.row_count == 0:
-            return
-        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
-        game_id = str(row_key)
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        game_id = str(event.row_key.value)
         game = next((g for g in self.games if g.game_id == game_id), None)
         if game and not game.is_scheduled:
             from cli.screens.boxscore import BoxScoreScreen
