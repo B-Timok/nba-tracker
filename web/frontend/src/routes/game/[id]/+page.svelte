@@ -141,9 +141,10 @@
 
 	.team-name {
 		font-family: var(--font-heading);
-		font-size: 1.4rem;
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: #ffffff;
+		text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 	}
 
 	.team-record {

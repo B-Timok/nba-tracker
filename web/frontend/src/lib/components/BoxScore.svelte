@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TeamBoxScore } from '$lib/types';
-	import { getTeamGradient } from '$lib/teamColors';
+	import { getTeamColor } from '$lib/teamColors';
 
 	export let team: TeamBoxScore;
 	export let label: string;
@@ -45,7 +45,7 @@
 </script>
 
 <div class="box-score">
-	<h3 style="background: {getTeamGradient(teamTricode)}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+	<h3 style="border-left: 4px solid {getTeamColor(teamTricode)};">
 		{label}
 	</h3>
 	<div class="table-wrapper">
@@ -111,7 +111,9 @@
 <style>
 	.box-score h3 {
 		margin-bottom: 0.75rem;
-		font-size: 1.1rem;
+		font-size: 1.2rem;
+		color: #ffffff;
+		padding-left: 0.75rem;
 	}
 
 	.table-wrapper {
