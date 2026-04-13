@@ -145,6 +145,116 @@ class NBAClient:
             ))
         return actions
 
+    def _parse_standings(self, raw: dict) -> list[StandingsEntry]:
+        result_sets = raw.get("resultSets", [])
+        if not result_sets:
+            return []
+        headers = result_sets[0].get("headers", [])
+        rows = result_sets[0].get("rowSet", [])
+
+        def col(row, name):
+            try:
+                return row[headers.index(name)]
+            except (ValueError, IndexError):
+                return None
+
+        entries = []
+        for row in rows:
+            entries.append(StandingsEntry(
+                team_id=col(row, "TeamID"),
+                team_name=col(row, "TeamName"),
+                team_city=col(row, "TeamCity"),
+                team_tricode=col(row, "TeamSlug"),
+                conference=col(row, "Conference"),
+                division=col(row, "Division"),
+                division_rank=col(row, "DivisionRank") or 0,
+                playoff_rank=col(row, "PlayoffRank") or 0,
+                wins=col(row, "WINS") or 0,
+                losses=col(row, "LOSSES") or 0,
+                win_pct=col(row, "WinPCT") or 0.0,
+                home_record=col(row, "HOME") or "",
+                road_record=col(row, "ROAD") or "",
+                last_10=col(row, "L10") or "",
+                streak=col(row, "strCurrentStreak") or "",
+                games_back=col(row, "ConferenceGamesBack") or 0.0,
+                clinch_indicator=col(row, "ClinchIndicator") or "",
+            ))
+        return entries
+
+    def _parse_player_stats(self, raw: dict) -> list[PlayerStats]:
+        result_sets = raw.get("resultSets", [])
+        if not result_sets:
+            return []
+        headers = result_sets[0].get("headers", [])
+        rows = result_sets[0].get("rowSet", [])
+
+        def col(row, name):
+            try:
+                return row[headers.index(name)]
+            except (ValueError, IndexError):
+                return None
+
+        stats = []
+        for row in rows:
+            stats.append(PlayerStats(
+                player_id=col(row, "PLAYER_ID"),
+                player_name=col(row, "PLAYER_NAME") or "",
+                team_id=col(row, "TEAM_ID") or 0,
+                team_abbreviation=col(row, "TEAM_ABBREVIATION") or "",
+                age=col(row, "AGE") or 0.0,
+                gp=col(row, "GP") or 0,
+                mpg=col(row, "MIN") or 0.0,
+                ppg=col(row, "PTS") or 0.0,
+                rpg=col(row, "REB") or 0.0,
+                apg=col(row, "AST") or 0.0,
+                spg=col(row, "STL") or 0.0,
+                bpg=col(row, "BLK") or 0.0,
+                topg=col(row, "TOV") or 0.0,
+                fpg=col(row, "PF") or 0.0,
+                fg_pct=col(row, "FG_PCT") or 0.0,
+                fg3_pct=col(row, "FG3_PCT") or 0.0,
+                ft_pct=col(row, "FT_PCT") or 0.0,
+                plus_minus=col(row, "PLUS_MINUS") or 0.0,
+            ))
+        return stats
+
+    def _parse_team_stats(self, raw: dict) -> list[TeamStats]:
+        result_sets = raw.get("resultSets", [])
+        if not result_sets:
+            return []
+        headers = result_sets[0].get("headers", [])
+        rows = result_sets[0].get("rowSet", [])
+
+        def col(row, name):
+            try:
+                return row[headers.index(name)]
+            except (ValueError, IndexError):
+                return None
+
+        stats = []
+        for row in rows:
+            stats.append(TeamStats(
+                team_id=col(row, "TEAM_ID"),
+                team_name=col(row, "TEAM_NAME") or "",
+                gp=col(row, "GP") or 0,
+                wins=col(row, "W") or 0,
+                losses=col(row, "L") or 0,
+                win_pct=col(row, "W_PCT") or 0.0,
+                mpg=col(row, "MIN") or 0.0,
+                ppg=col(row, "PTS") or 0.0,
+                rpg=col(row, "REB") or 0.0,
+                apg=col(row, "AST") or 0.0,
+                spg=col(row, "STL") or 0.0,
+                bpg=col(row, "BLK") or 0.0,
+                topg=col(row, "TOV") or 0.0,
+                fpg=col(row, "PF") or 0.0,
+                fg_pct=col(row, "FG_PCT") or 0.0,
+                fg3_pct=col(row, "FG3_PCT") or 0.0,
+                ft_pct=col(row, "FT_PCT") or 0.0,
+                plus_minus=col(row, "PLUS_MINUS") or 0.0,
+            ))
+        return stats
+
     def _parse_scoreboard(self, raw: dict) -> list[Game]:
         games_data = raw.get("scoreboard", {}).get("games", [])
         games = []

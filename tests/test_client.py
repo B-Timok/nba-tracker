@@ -69,3 +69,49 @@ def test_parse_playbyplay():
     # Check that we have actions across multiple periods
     periods = {a.period for a in actions}
     assert len(periods) >= 4  # At least 4 quarters
+
+
+def test_parse_standings():
+    with open(FIXTURES / "standings_2025-26.json") as f:
+        raw = json.load(f)
+
+    client = NBAClient()
+    entries = client._parse_standings(raw)
+
+    assert len(entries) == 30  # 30 NBA teams
+
+    # Thunder should be first (best record)
+    thunder = next(e for e in entries if e.team_name == "Thunder")
+    assert thunder.conference == "West"
+    assert thunder.wins == 64
+    assert thunder.losses == 18
+
+    # Check both conferences exist
+    conferences = {e.conference for e in entries}
+    assert conferences == {"East", "West"}
+
+
+def test_parse_player_stats():
+    with open(FIXTURES / "player_stats_2025-26.json") as f:
+        raw = json.load(f)
+
+    client = NBAClient()
+    stats = client._parse_player_stats(raw)
+
+    assert len(stats) > 100  # Hundreds of players
+    first = stats[0]
+    assert first.player_name != ""
+    assert first.gp > 0
+
+
+def test_parse_team_stats():
+    with open(FIXTURES / "team_stats_2025-26.json") as f:
+        raw = json.load(f)
+
+    client = NBAClient()
+    stats = client._parse_team_stats(raw)
+
+    assert len(stats) == 30
+    first = stats[0]
+    assert first.team_name != ""
+    assert first.gp > 0
