@@ -9,7 +9,19 @@
 	let teamStats: TeamStats[] = [];
 	let loading = true;
 	let error = '';
-	let activeTab: 'players' | 'teams' = 'players';
+	let activeView: 'players' | 'teams' = 'players';
+	let activeCategory = 'ppg';
+
+	const categories = [
+		{ key: 'ppg', label: 'Points' },
+		{ key: 'rpg', label: 'Rebounds' },
+		{ key: 'apg', label: 'Assists' },
+		{ key: 'spg', label: 'Steals' },
+		{ key: 'bpg', label: 'Blocks' },
+		{ key: 'fg_pct', label: 'FG%' },
+		{ key: 'fg3_pct', label: '3P%' },
+		{ key: 'ft_pct', label: 'FT%' },
+	];
 
 	const playerColumns = [
 		{ key: 'player_name', label: 'Player' },
@@ -43,11 +55,23 @@
 		{ key: 'plus_minus', label: '+/-', format: (v: number) => (v > 0 ? '+' : '') + v.toFixed(1) },
 	];
 
+	$: sortedPlayers = [...playerStats].sort((a, b) => {
+		const va = (a as any)[activeCategory];
+		const vb = (b as any)[activeCategory];
+		return vb - va;
+	});
+
+	$: sortedTeams = [...teamStats].sort((a, b) => {
+		const va = (a as any)[activeCategory];
+		const vb = (b as any)[activeCategory];
+		return vb - va;
+	});
+
 	onMount(async () => {
 		try {
 			const [ps, ts] = await Promise.all([getPlayerStats(), getTeamStats()]);
-			playerStats = ps.sort((a, b) => b.ppg - a.ppg);
-			teamStats = ts.sort((a, b) => b.ppg - a.ppg);
+			playerStats = ps;
+			teamStats = ts;
 		} catch (e: any) {
 			error = e.message || 'Failed to load stats';
 		}
@@ -59,12 +83,24 @@
 	<h1>Stats</h1>
 
 	<div class="tabs">
-		<button class="tab" class:active={activeTab === 'players'} on:click={() => activeTab = 'players'}>
+		<button class="tab" class:active={activeView === 'players'} on:click={() => activeView = 'players'}>
 			Player Stats
 		</button>
-		<button class="tab" class:active={activeTab === 'teams'} on:click={() => activeTab = 'teams'}>
+		<button class="tab" class:active={activeView === 'teams'} on:click={() => activeView = 'teams'}>
 			Team Stats
 		</button>
+	</div>
+
+	<div class="categories">
+		{#each categories as cat}
+			<button
+				class="cat-btn"
+				class:active={activeCategory === cat.key}
+				on:click={() => activeCategory = cat.key}
+			>
+				{cat.label}
+			</button>
+		{/each}
 	</div>
 
 	{#if loading}
@@ -75,10 +111,10 @@
 		</div>
 	{:else if error}
 		<div class="error">{error}</div>
-	{:else if activeTab === 'players'}
-		<StatsTable data={playerStats} columns={playerColumns} filterKey="player_name" />
+	{:else if activeView === 'players'}
+		<StatsTable data={sortedPlayers} columns={playerColumns} filterKey="player_name" />
 	{:else}
-		<StatsTable data={teamStats} columns={teamColumns} filterKey="team_name" />
+		<StatsTable data={sortedTeams} columns={teamColumns} filterKey="team_name" />
 	{/if}
 </div>
 
@@ -95,7 +131,7 @@
 	.tabs {
 		display: flex;
 		gap: 0.25rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1rem;
 		border-bottom: 1px solid var(--border-subtle);
 	}
 
@@ -105,12 +141,41 @@
 		font-size: 0.9rem;
 		color: var(--text-secondary);
 		border-bottom: 2px solid transparent;
-		transition: all var(--transition);
+		transition: all 0.15s ease;
 		margin-bottom: -1px;
 	}
 
 	.tab:hover { color: var(--text-primary); }
 	.tab.active { color: var(--text-primary); border-bottom-color: var(--accent-orange); }
+
+	.categories {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.cat-btn {
+		padding: 0.4rem 1rem;
+		border-radius: 999px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		transition: all 0.15s ease;
+	}
+
+	.cat-btn:hover {
+		color: var(--text-primary);
+		border-color: var(--text-muted);
+	}
+
+	.cat-btn.active {
+		color: #ffffff;
+		background: var(--accent-orange);
+		border-color: var(--accent-orange);
+	}
 
 	.skeleton-table { display: flex; flex-direction: column; gap: 0.5rem; }
 	.error { text-align: center; padding: 3rem; color: var(--accent-red); }
