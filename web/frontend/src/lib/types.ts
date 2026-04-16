@@ -245,3 +245,14 @@ export interface PlayoffBracket {
 	current_round: number;
 	series: BracketSeries[];
 }
+
+export interface PlayInGame {
+	game_id: string;
+	date: string;
+	status: number;
+	status_text: string;
+	home_tricode: string;
+	home_score: number;
+	away_tricode: string;
+	away_score: number;
+}

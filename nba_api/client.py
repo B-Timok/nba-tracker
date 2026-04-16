@@ -1,7 +1,7 @@
-import requests
 import time
 from datetime import date
 from typing import Optional
+from curl_cffi import requests
 from nba_api.endpoints import NBAEndpoints
 from nba_api.models import (
     Team, PeriodScore, GameLeader, Game,
@@ -36,7 +36,10 @@ class _Cache:
 
 class NBAClient:
     def __init__(self):
-        self._session = requests.Session()
+        # curl_cffi impersonates a real Chrome TLS handshake (JA3/JA4) —
+        # required because stats.nba.com is behind Akamai Bot Manager and
+        # silently drops python-requests / plain-curl fingerprints.
+        self._session = requests.Session(impersonate="chrome120")
         self._session.headers.update(NBAEndpoints.stats_headers())
         self._cache = _Cache()
 

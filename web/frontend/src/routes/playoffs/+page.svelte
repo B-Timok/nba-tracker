@@ -1,10 +1,102 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { getStandings, getPlayoffs } from '$lib/api';
+	import { getStandings, getPlayoffs, getPlayIn } from '$lib/api';
 	import { getTeamColor } from '$lib/teamColors';
 	import Skeleton from '$lib/components/Skeleton.svelte';
-	import type { StandingsEntry, PlayoffBracket, BracketSeries, BracketTeam } from '$lib/types';
+	import type { StandingsEntry, PlayoffBracket, BracketSeries, BracketTeam, PlayInGame } from '$lib/types';
+
+	const tricodeByName: Record<string, string> = {
+		'Hawks': 'ATL', 'Celtics': 'BOS', 'Nets': 'BKN', 'Hornets': 'CHA',
+		'Bulls': 'CHI', 'Cavaliers': 'CLE', 'Mavericks': 'DAL', 'Nuggets': 'DEN',
+		'Pistons': 'DET', 'Warriors': 'GSW', 'Rockets': 'HOU', 'Pacers': 'IND',
+		'Clippers': 'LAC', 'Lakers': 'LAL', 'Grizzlies': 'MEM', 'Heat': 'MIA',
+		'Bucks': 'MIL', 'Timberwolves': 'MIN', 'Pelicans': 'NOP', 'Knicks': 'NYK',
+		'Thunder': 'OKC', 'Magic': 'ORL', '76ers': 'PHI', 'Suns': 'PHX',
+		'Trail Blazers': 'POR', 'Kings': 'SAC', 'Spurs': 'SAS', 'Raptors': 'TOR',
+		'Jazz': 'UTA', 'Wizards': 'WAS',
+	};
+
+	function entryTricode(e: StandingsEntry): string {
+		return tricodeByName[e.team_name] || e.team_name.substring(0, 3).toUpperCase();
+	}
+
+	type PlayInResult = {
+		sevenSeed: StandingsEntry;
+		eightSeed: StandingsEntry | null;      // null when #8 game hasn't happened yet
+		eightCandidates: StandingsEntry[];      // teams still alive for #8 (size 0, 1, or 2)
+		eliminated: Set<string>;                 // tricodes eliminated in play-in
+		games: Array<PlayInGame & {
+			label: string;
+			home_name: string; home_seed: number;
+			away_name: string; away_seed: number;
+		}>;
+	};
+
+	function computePlayInResult(entries: StandingsEntry[], games: PlayInGame[], conf: 'East' | 'West'): PlayInResult {
+		const seeds = entries
+			.filter(e => e.conference === conf)
+			.sort((a, b) => a.playoff_rank - b.playoff_rank)
+			.slice(6, 10);
+		const byTricode = new Map<string, StandingsEntry>(seeds.map(e => [entryTricode(e), e]));
+		const allTricodes = new Set(byTricode.keys());
+
+		const confGames = games
+			.filter(g => allTricodes.has(g.home_tricode) && allTricodes.has(g.away_tricode))
+			.sort((a, b) => a.date.localeCompare(b.date) || a.game_id.localeCompare(b.game_id));
+
+		let sevenSeed: StandingsEntry = seeds[0];   // default: original #7
+		let sevenLoser: StandingsEntry | null = null;
+		let tenWinner: StandingsEntry | null = null;
+		let eightSeed: StandingsEntry | null = null;
+		const eliminated = new Set<string>();
+		const labeled: PlayInResult['games'] = [];
+
+		for (const g of confGames) {
+			const home = byTricode.get(g.home_tricode)!;
+			const away = byTricode.get(g.away_tricode)!;
+			const matchRanks = [home.playoff_rank, away.playoff_rank].sort((a, b) => a - b);
+
+			let label: string;
+			if (matchRanks[0] === 7 && matchRanks[1] === 8) label = '7 vs 8 — winner is #7';
+			else if (matchRanks[0] === 9 && matchRanks[1] === 10) label = '9 vs 10 — loser eliminated';
+			else label = '#8 seed decider';
+
+			if (g.status === 3) {
+				const winner = g.home_score > g.away_score ? home : away;
+				const loser = g.home_score > g.away_score ? away : home;
+				const loserTC = loser === home ? g.home_tricode : g.away_tricode;
+				if (label.startsWith('7 vs 8')) { sevenSeed = winner; sevenLoser = loser; }
+				else if (label.startsWith('9 vs 10')) { tenWinner = winner; eliminated.add(loserTC); }
+				else { eightSeed = winner; eliminated.add(loserTC); }
+			}
+			labeled.push({
+				...g,
+				label,
+				home_name: home.team_name, home_seed: home.playoff_rank,
+				away_name: away.team_name, away_seed: away.playoff_rank,
+			});
+		}
+
+		const eightCandidates: StandingsEntry[] = eightSeed
+			? []
+			: [sevenLoser, tenWinner].filter((e): e is StandingsEntry => e !== null);
+		// Before any play-in has happened, default #8 to the original #8 seed
+		if (!eightSeed && eightCandidates.length === 0) {
+			eightSeed = seeds[1] ?? null;
+		}
+
+		return { sevenSeed, eightSeed, eightCandidates, eliminated, games: labeled };
+	}
+
+	function tbdTeam(rank: number, candidates: StandingsEntry[]): BracketTeam {
+		const name = candidates.length === 2
+			? `${candidates[0].team_name} / ${candidates[1].team_name}`
+			: candidates.length === 1
+				? `${candidates[0].team_name} or TBD`
+				: 'TBD';
+		return { team_id: -1, city: '', name, tricode: '', rank, wins: 0, reg_wins: 0, reg_losses: 0 };
+	}
 
 	const arenas: Record<string, string> = {
 		'Atlanta': 'State Farm Arena, Atlanta',
@@ -44,35 +136,23 @@
 	let seasonLabel = '';
 
 	let allSeries: BracketSeries[] = [];
-	let eastPlayIn: StandingsEntry[] = [];
-	let westPlayIn: StandingsEntry[] = [];
+	let eastResult: PlayInResult | null = null;
+	let westResult: PlayInResult | null = null;
 
-	function entryToBracketTeam(e: StandingsEntry): BracketTeam {
-		const tricodeMap: Record<string, string> = {
-			'Hawks': 'ATL', 'Celtics': 'BOS', 'Nets': 'BKN', 'Hornets': 'CHA',
-			'Bulls': 'CHI', 'Cavaliers': 'CLE', 'Mavericks': 'DAL', 'Nuggets': 'DEN',
-			'Pistons': 'DET', 'Warriors': 'GSW', 'Rockets': 'HOU', 'Pacers': 'IND',
-			'Clippers': 'LAC', 'Lakers': 'LAL', 'Grizzlies': 'MEM', 'Heat': 'MIA',
-			'Bucks': 'MIL', 'Timberwolves': 'MIN', 'Pelicans': 'NOP', 'Knicks': 'NYK',
-			'Thunder': 'OKC', 'Magic': 'ORL', '76ers': 'PHI', 'Suns': 'PHX',
-			'Trail Blazers': 'POR', 'Kings': 'SAC', 'Spurs': 'SAS', 'Raptors': 'TOR',
-			'Jazz': 'UTA', 'Wizards': 'WAS',
-		};
-		const tricode = tricodeMap[e.team_name] || e.team_name.substring(0, 3).toUpperCase();
-
+	function entryToBracketTeam(e: StandingsEntry, overrideRank?: number): BracketTeam {
 		return {
 			team_id: e.team_id,
 			city: e.team_city,
 			name: e.team_name,
-			tricode,
-			rank: e.playoff_rank,
+			tricode: entryTricode(e),
+			rank: overrideRank ?? e.playoff_rank,
 			wins: 0,
 			reg_wins: e.wins,
 			reg_losses: e.losses,
 		};
 	}
 
-	function buildProjectedBracket(entries: StandingsEntry[]) {
+	function buildProjectedBracket(entries: StandingsEntry[], playIn: PlayInGame[]) {
 		const series: BracketSeries[] = [];
 		let orderCounter = 1;
 
@@ -81,7 +161,19 @@
 				.filter(e => e.conference === conf)
 				.sort((a, b) => a.playoff_rank - b.playoff_rank);
 
-			const top8 = teams.slice(0, 8);
+			const result = computePlayInResult(entries, playIn, conf);
+			if (conf === 'East') eastResult = result; else westResult = result;
+
+			const sevenBracket = entryToBracketTeam(result.sevenSeed, 7);
+			const eightBracket: BracketTeam = result.eightSeed
+				? entryToBracketTeam(result.eightSeed, 8)
+				: tbdTeam(8, result.eightCandidates);
+			const top8: BracketTeam[] = [
+				...teams.slice(0, 6).map(e => entryToBracketTeam(e)),
+				sevenBracket,
+				eightBracket,
+			];
+
 			const pairings = [[0, 7], [1, 6], [2, 5], [3, 4]];
 			for (const [hi, lo] of pairings) {
 				series.push({
@@ -93,8 +185,8 @@
 					series_text: '',
 					series_status: 0,
 					series_winner: 0,
-					high_seed: entryToBracketTeam(top8[hi]),
-					low_seed: entryToBracketTeam(top8[lo]),
+					high_seed: top8[hi],
+					low_seed: top8[lo],
 					display_order: orderCounter,
 				});
 				orderCounter++;
@@ -121,10 +213,6 @@
 				display_order: orderCounter,
 			});
 			orderCounter++;
-
-			const playIn = teams.slice(6, 10);
-			if (conf === 'East') eastPlayIn = playIn;
-			else westPlayIn = playIn;
 		}
 
 		series.push({
@@ -158,8 +246,11 @@
 			} catch { /* fall through */ }
 
 			isProjected = true;
-			const standings = await getStandings();
-			buildProjectedBracket(standings);
+			const [standings, playIn] = await Promise.all([
+				getStandings(),
+				getPlayIn().catch(() => [] as PlayInGame[]),
+			]);
+			buildProjectedBracket(standings, playIn);
 			const now = new Date();
 			const startYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
 			seasonLabel = `${startYear}-${String(startYear + 1).slice(-2)}`;
@@ -192,7 +283,7 @@
 	}
 
 	function hasTeams(series: BracketSeries): boolean {
-		return series.high_seed.team_id > 0 && series.low_seed.team_id > 0;
+		return series.high_seed.team_id !== 0 && series.low_seed.team_id !== 0;
 	}
 
 	function getVenue(series: BracketSeries): string {
@@ -258,7 +349,7 @@
 										<span class="seed">{series.high_seed.rank}</span>
 										<span class="team-name">{series.high_seed.name}</span>
 										{#if isProjected}
-											<span class="team-record">{series.high_seed.reg_wins}-{series.high_seed.reg_losses}</span>
+											<span class="team-record">{series.high_seed.team_id > 0 ? `${series.high_seed.reg_wins}-${series.high_seed.reg_losses}` : ''}</span>
 										{:else}
 											<span class="series-wins">{series.high_seed.wins}</span>
 										{/if}
@@ -267,7 +358,7 @@
 										<span class="seed">{series.low_seed.rank}</span>
 										<span class="team-name">{series.low_seed.name}</span>
 										{#if isProjected}
-											<span class="team-record">{series.low_seed.reg_wins}-{series.low_seed.reg_losses}</span>
+											<span class="team-record">{series.low_seed.team_id > 0 ? `${series.low_seed.reg_wins}-${series.low_seed.reg_losses}` : ''}</span>
 										{:else}
 											<span class="series-wins">{series.low_seed.wins}</span>
 										{/if}
@@ -290,7 +381,7 @@
 								{#if hasTeams(series)}
 									<div class="team-row" class:winner={isWinner(series, 'high')} class:loser={isLoser(series, 'high')} style="--team-color: {getTeamColor(series.high_seed.tricode)}">
 										{#if isProjected}
-											<span class="team-record">{series.high_seed.reg_wins}-{series.high_seed.reg_losses}</span>
+											<span class="team-record">{series.high_seed.team_id > 0 ? `${series.high_seed.reg_wins}-${series.high_seed.reg_losses}` : ''}</span>
 										{:else}
 											<span class="series-wins">{series.high_seed.wins}</span>
 										{/if}
@@ -299,7 +390,7 @@
 									</div>
 									<div class="team-row" class:winner={isWinner(series, 'low')} class:loser={isLoser(series, 'low')} style="--team-color: {getTeamColor(series.low_seed.tricode)}">
 										{#if isProjected}
-											<span class="team-record">{series.low_seed.reg_wins}-{series.low_seed.reg_losses}</span>
+											<span class="team-record">{series.low_seed.team_id > 0 ? `${series.low_seed.reg_wins}-${series.low_seed.reg_losses}` : ''}</span>
 										{:else}
 											<span class="series-wins">{series.low_seed.wins}</span>
 										{/if}
@@ -318,38 +409,37 @@
 		</div>
 
 		<!-- Play-In section -->
-		{#if isProjected && (eastPlayIn.length > 0 || westPlayIn.length > 0)}
+		{#if isProjected && (eastResult || westResult)}
 			<div class="playin-container">
 				<h2>Play-In Tournament</h2>
 				<div class="playin-grid">
-					<div class="playin-conf">
-						<div class="playin-header">
-							<span class="playin-col-seed">#</span>
-							<span class="playin-col-team">Team</span>
-							<span class="playin-col-record">Record</span>
-						</div>
-						{#each eastPlayIn as team, i}
-							<div class="playin-team" in:fly={{ x: -10, duration: 200, delay: i * 50 + 600 }}>
-								<span class="playin-col-seed">{team.playoff_rank}</span>
-								<span class="playin-col-team">{team.team_name}</span>
-								<span class="playin-col-record">{team.record}</span>
+					{#each [{ label: 'Eastern', r: eastResult }, { label: 'Western', r: westResult }] as col}
+						{#if col.r}
+							<div class="playin-conf">
+								<div class="playin-conf-title">{col.label}</div>
+								{#each col.r.games as g, i (g.game_id)}
+									{@const homeWon = g.status === 3 && g.home_score > g.away_score}
+									{@const awayWon = g.status === 3 && g.away_score > g.home_score}
+									<div class="playin-game" in:fly={{ y: 8, duration: 200, delay: i * 60 + 500 }}>
+										<div class="playin-game-label">{g.label}</div>
+										<div class="playin-row" class:winner={awayWon} class:loser={homeWon && !awayWon} style="--team-color: {getTeamColor(g.away_tricode)}">
+											<span class="playin-seed">#{g.away_seed}</span>
+											<span class="playin-tc">{g.away_tricode}</span>
+											<span class="playin-team-name">{g.away_name}</span>
+											<span class="playin-score">{g.status === 3 ? g.away_score : ''}</span>
+										</div>
+										<div class="playin-row" class:winner={homeWon} class:loser={awayWon} style="--team-color: {getTeamColor(g.home_tricode)}">
+											<span class="playin-seed">#{g.home_seed}</span>
+											<span class="playin-tc">{g.home_tricode}</span>
+											<span class="playin-team-name">{g.home_name}</span>
+											<span class="playin-score">{g.status === 3 ? g.home_score : ''}</span>
+										</div>
+										<div class="playin-game-status">{g.status_text}</div>
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
-					<div class="playin-conf">
-						<div class="playin-header">
-							<span class="playin-col-seed">#</span>
-							<span class="playin-col-team">Team</span>
-							<span class="playin-col-record">Record</span>
-						</div>
-						{#each westPlayIn as team, i}
-							<div class="playin-team" in:fly={{ x: 10, duration: 200, delay: i * 50 + 600 }}>
-								<span class="playin-col-seed">{team.playoff_rank}</span>
-								<span class="playin-col-team">{team.team_name}</span>
-								<span class="playin-col-record">{team.record}</span>
-							</div>
-						{/each}
-					</div>
+						{/if}
+					{/each}
 				</div>
 			</div>
 		{/if}
@@ -588,53 +678,80 @@
 		margin: 0 auto;
 	}
 
-	.playin-header {
-		display: flex;
-		align-items: center;
-		padding: 0.4rem 0.75rem;
-		font-size: 0.7rem;
+	.playin-conf-title {
+		font-size: 0.75rem;
 		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-muted);
+		margin-bottom: 0.5rem;
+		padding-bottom: 0.35rem;
+		border-bottom: 1px solid var(--border-subtle);
+	}
+
+	.playin-game {
+		margin-bottom: 0.85rem;
+		padding: 0.5rem 0.65rem;
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+	}
+
+	.playin-game-label {
+		font-size: 0.7rem;
+		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		color: var(--text-muted);
-		border-bottom: 1px solid var(--border-subtle);
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.35rem;
 	}
 
-	.playin-team {
+	.playin-row {
 		display: flex;
 		align-items: center;
-		padding: 0.4rem 0.75rem;
-		font-size: 0.85rem;
-		border-bottom: 1px solid var(--border-subtle);
+		gap: 0.6rem;
+		padding: 0.3rem 0 0.3rem 0.65rem;
+		margin: 0.2rem 0;
+		font-size: 0.9rem;
+		border-left: 3px solid var(--team-color, var(--border-subtle));
 	}
 
-	.playin-team:last-child {
-		border-bottom: none;
-	}
-
-	.playin-col-seed {
+	.playin-seed {
 		width: 2rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		color: var(--text-muted);
-		text-align: center;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.playin-col-team {
+	.playin-tc {
+		width: 2.8rem;
+		font-weight: 700;
+		color: var(--text-secondary);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.playin-team-name {
 		flex: 1;
 		font-family: var(--font-heading);
 		font-weight: 600;
 	}
 
-	.playin-col-record {
-		width: 3.5rem;
+	.playin-score {
+		width: 2.5rem;
 		text-align: right;
 		font-variant-numeric: tabular-nums;
-		color: var(--text-muted);
+		font-weight: 600;
 	}
 
-	.playin-header .playin-col-team {
-		font-family: var(--font-body);
+	.playin-row.winner { color: var(--accent-green); }
+	.playin-row.loser { color: var(--text-muted); opacity: 0.6; }
+
+	.playin-game-status {
+		margin-top: 0.25rem;
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		text-align: right;
 	}
 
 	.error {

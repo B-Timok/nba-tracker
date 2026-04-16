@@ -63,8 +63,21 @@ class NBAEndpoints:
 
     @staticmethod
     def stats_headers() -> dict[str, str]:
+        # stats.nba.com sits behind Akamai Bot Manager, which inspects both
+        # headers and TLS fingerprint. These headers match what nba.com's
+        # own web app sends; the TLS side is handled by curl_cffi's
+        # browser impersonation in NBAClient.
         return {
-            "User-Agent": "Mozilla/5.0",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.nba.com",
             "Referer": "https://www.nba.com/",
-            "Accept": "application/json",
+            "x-nba-stats-origin": "stats",
+            "x-nba-stats-token": "true",
+            "Connection": "keep-alive",
         }

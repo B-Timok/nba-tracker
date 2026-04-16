@@ -7,7 +7,7 @@
 	function formatDisplay(dateStr: string): string {
 		const d = new Date(dateStr + 'T12:00:00');
 		const today = new Date();
-		const todayStr = today.toISOString().split('T')[0];
+		const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 		const label = dateStr === todayStr ? ' (Today)' : '';
 		return d.toLocaleDateString('en-US', {
 			weekday: 'short',

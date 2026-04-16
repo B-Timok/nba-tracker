@@ -374,6 +374,39 @@ def get_player_profile(player_id: int):
     }
 
 
+@router.get("/playin")
+def get_playin():
+    """Return play-in tournament games from the cached schedule.
+
+    Play-in game IDs are prefixed '005' (vs '002' regular season, '004' playoffs).
+    The client is responsible for mapping tricodes to conferences via standings.
+    """
+    try:
+        schedule = client.get_schedule()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Schedule unavailable: {e}")
+
+    games = []
+    for gd in schedule.get("leagueSchedule", {}).get("gameDates", []):
+        for g in gd.get("games", []):
+            gid = g.get("gameId", "")
+            if not gid.startswith("005"):
+                continue
+            home = g.get("homeTeam", {})
+            away = g.get("awayTeam", {})
+            games.append({
+                "game_id": gid,
+                "date": gd.get("gameDate", "").split()[0],
+                "status": g.get("gameStatus", 1),
+                "status_text": g.get("gameStatusText", ""),
+                "home_tricode": home.get("teamTricode", ""),
+                "home_score": home.get("score", 0),
+                "away_tricode": away.get("teamTricode", ""),
+                "away_score": away.get("score", 0),
+            })
+    return games
+
+
 @router.get("/playoffs")
 def get_playoffs(season: str = Query(default=None)):
     if not season:

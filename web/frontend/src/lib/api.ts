@@ -1,7 +1,7 @@
 import type {
 	Game, BoxScoreResponse, PlayAction,
 	StandingsEntry, PlayerStats, TeamStats,
-	PlayerProfile, PlayoffBracket
+	PlayerProfile, PlayoffBracket, PlayInGame
 } from '$lib/types';
 
 const BASE = '/api';
@@ -49,4 +49,8 @@ export async function getPlayerProfile(playerId: number): Promise<PlayerProfile>
 export async function getPlayoffs(season?: string): Promise<PlayoffBracket> {
 	const params = season ? `?season=${season}` : '';
 	return fetchJSON<PlayoffBracket>(`${BASE}/playoffs${params}`);
+}
+
+export async function getPlayIn(): Promise<PlayInGame[]> {
+	return fetchJSON<PlayInGame[]>(`${BASE}/playin`);
 }

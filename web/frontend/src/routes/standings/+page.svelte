@@ -68,7 +68,7 @@
 							<td class="team-col">
 								<span class="team-name">{entry.team_city} {entry.team_name}</span>
 								{#if entry.clinch_indicator?.trim()}
-									<span class="clinch">{entry.clinch_indicator.trim()}</span>
+									<span class="clinch" class:eliminated={/\bo\b/.test(entry.clinch_indicator)}>{entry.clinch_indicator.trim()}</span>
 								{/if}
 							</td>
 							<td>{entry.wins}</td>
@@ -89,12 +89,11 @@
 
 		<div class="legend">
 			<span class="legend-title">Key:</span>
-			<span><strong>w</strong> — best overall record</span>
+			<span><strong>e / w</strong> — best record in East / West</span>
 			<span><strong>x</strong> — clinched playoff</span>
-			<span><strong>p/pi</strong> — clinched play-in</span>
-			<span><strong>a/c/se/sw/nw/pac</strong> — clinched division</span>
+			<span><strong>p / pi</strong> — clinched play-in</span>
+			<span><strong>a / c / se / nw / pac / sw</strong> — clinched division</span>
 			<span><strong>o</strong> — eliminated from playoffs</span>
-			<span><strong>e</strong> — eliminated from contention</span>
 		</div>
 	{/if}
 </div>
@@ -171,6 +170,7 @@
 
 	.team-name { font-weight: 600; }
 	.clinch { font-size: 0.7rem; color: var(--accent-green); margin-left: 0.3rem; }
+	.clinch.eliminated { color: var(--text-muted); }
 	.streak-w { color: var(--accent-green); }
 	.streak-l { color: var(--accent-red); }
 
